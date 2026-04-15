@@ -1,93 +1,121 @@
-# wptskill
+<!-- ai-directive: skill-registry -->
+# Wapitee Skill Registry
 
+> **AI 读取规则**：当用户发起任何请求时，**优先读取本文件**，根据用户意图匹配下方技能列表，然后再读取对应的具体 skill 文件。不要直接猜测该用哪个 skill。
 
+---
 
-## Getting started
+## Skill 速查表
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+| 匹配优先级 | 触发场景（关键词/意图） | Skill 文件名 | Skill 名称 |
+|:---|:---|:---|:---|
+| **P0** | 用户提到 `git push`、`commit`、Wapitee 内部 GitLab、SSH 配置（端口 8822） | `wapitee-gitlab-push.md` | `wapitee-gitlab-push` |
+| **P0** | 用户提到 `gitlab vercel` 集成、自建 GitLab 部署到 Vercel、CI/CD 配置 | `wapitee-gitlab-vercel-ci-cd-setup.md` | `gitlab-vercel-ci-cd-setup` |
+| **P0** | 用户提到 Meta Pixel / Facebook Pixel / `fbq` / Lead 追踪 / Pixel ID | `meta-pixel-tracking-with-privacy-v2.md` | `meta-pixel-tracking` |
+| **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
+| **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+## 冲突解决规则
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+当有多个 skill 可能匹配时，按以下规则决策：
+
+### 1. Microsoft Clarity 二选一
 
 ```
-cd existing_repo
-git remote add origin http://git.wapitee.io/fundation/wptskill.git
-git branch -M main
-git push -uf origin main
+IF 用户输入包含 (gdpr OR 隐私 OR cookie banner OR consent OR 合规 OR 同意):
+    → 使用 microsoft-clarity-gdpr-control.md
+ELSE IF 用户输入包含 (埋点 OR 自定义事件 OR 热力图 OR 追踪 OR tracking OR event):
+    → 使用 microsoft-clarity-setup.md
+ELSE:
+    → 询问用户具体需求（隐私合规 vs 基础埋点/自定义事件）
 ```
 
-## Integrate with your tools
+### 2. GitLab 二选一
 
-* [Set up project integrations](http://git.wapitee.io/fundation/wptskill/-/settings/integrations)
+```
+IF 用户输入包含 (vercel OR ci/cd OR 部署 OR deployment OR gitlab-ci.yml):
+    → 使用 wapitee-gitlab-vercel-ci-cd-setup.md
+ELSE IF 用户输入包含 (push OR commit OR ssh OR 8822 OR git.wapitee.io):
+    → 使用 wapitee-gitlab-push.md
+ELSE:
+    → 询问用户是内部 GitLab 操作还是 Vercel CI/CD 配置
+```
 
-## Collaborate with your team
+---
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## Skill 清单（详细版）
 
-## Test and Deploy
+### `wapitee-gitlab-push`
+- **文件**：`wapitee-gitlab-push.md`
+- **作用**：Wapitee 内部 GitLab 的默认配置与 push 工作流
+- **核心能力**：
+  - 自动检查/写入 `~/.ssh/config`（端口 8822）
+  - 生成 ed25519 SSH 密钥并提示用户添加到 GitLab
+  - 执行 `git add / commit / push`（commit message 强制中文）
+- **必备信息**：无（会自动检查环境）
 
-Use the built-in continuous integration in GitLab.
+### `gitlab-vercel-ci-cd-setup`
+- **文件**：`wapitee-gitlab-vercel-ci-cd-setup.md`
+- **作用**：自建 GitLab CE 与 Vercel 的自动化部署集成
+- **核心能力**：
+  - 交互式收集 `VERCEL_TOKEN`、`GITLAB_URL`、`PROJECT_ID` 等必要信息
+  - 生成 `.gitlab-ci.yml`、环境变量设置脚本、项目初始化脚本
+- **必备信息**：`VERCEL_TOKEN`、`GITLAB_URL`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID`、`FRAMEWORK`
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### `meta-pixel-tracking`
+- **文件**：`meta-pixel-tracking-with-privacy-v2.md`
+- **作用**：Meta (Facebook) Pixel 的隐私合规安装与事件追踪
+- **核心能力**：
+  - 注入 Pixel base code、PageView、Lead 转化
+  - GDPR / ePrivacy / CCPA 合规控制（Consent Mode、Limited Data Use）
+  - 支持 Standard / Basic Consent / Advanced Consent 三种模式
+- **必备信息**：Pixel ID（如缺失会中断并询问）
 
-***
+### `microsoft-clarity-gdpr-control`
+- **文件**：`microsoft-clarity-gdpr-control.md`
+- **作用**：Microsoft Clarity 的隐私合规与 Cookie Banner 集成
+- **核心能力**：
+  - Consent Mode V2 控制代码（延迟加载、同意级别切换、无 Cookie 模式）
+  - 与 Cookiebot、OneTrust、Osano 或自建 Banner 集成
+- **必备信息**：用户选择的同意级别（拒绝 / 仅分析 / 全部同意）
 
-# Editing this README
+### `microsoft-clarity-setup`
+- **文件**：`microsoft-clarity-setup.md`
+- **作用**：Microsoft Clarity 基础埋点与智能自定义事件生成
+- **核心能力**：
+  - 生成基础追踪代码（HTML / Next.js / React / Vue / Nuxt）
+  - 根据自然语言描述自动生成自定义事件代码（hover / click / scroll / form）
+- **必备信息**：Clarity Project ID（基础埋点模式）
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## 给团队的使用方式
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### 方式 A：Prompt 引用（推荐）
 
-## Name
-Choose a self-explaining name for your project.
+在系统 Prompt 或 Project Instructions 中加入：
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```
+You have access to the following skill directory: /Users/jacobg/Desktop/wapitee-skill
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Before answering any user request:
+1. Read /Users/jacobg/Desktop/wapitee-skill/README.md to determine which skill to use
+2. Then read the matched skill file
+3. Follow the instructions in that skill strictly
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### 方式 B：Claude Code 项目级配置
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+如果使用 Claude Code，可以在项目根目录的 `.claude/CLAUDE.md` 或类似配置中引用本注册表。
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+---
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## 新增 Skill 规范
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+1. 复制 `SKILL_TEMPLATE.md` 作为起点
+2. 文件名使用小写英文，单词间用连字符 `-`
+3. **必须**包含标准 YAML frontmatter（`name`、`description`、`triggers`、`version`）
+4. 完成后**更新本 README.md** 的速查表和详细清单
+5. 若与现有 skill 场景重叠，必须在 README 中补充冲突解决规则
