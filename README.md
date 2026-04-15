@@ -6,14 +6,14 @@
 ### macOS / Linux / WSL (Git Bash)
 
 ```bash
-git clone http://git.wapitee.io/fundation/wptskill.git ~/.claude/skills/wapitee
+git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git ~/.claude/skills/wapitee
 cd ~/.claude/skills/wapitee && ./setup
 ```
 
 ### Windows (PowerShell / CMD)
 
 ```powershell
-git clone http://git.wapitee.io/fundation/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
+git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
 cd "$env:LOCALAPPDATA\Claude\skills\wapitee"
 ```
 
