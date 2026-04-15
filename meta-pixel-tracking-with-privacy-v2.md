@@ -565,6 +565,66 @@ function grantMetaConsentCalifornia() {
 
 ---
 
+## Standard Events vs Custom Events
+
+### Meta Pixel 官方标准事件列表
+
+Meta 官方预定义的 `fbq('track', ...)` 标准事件只有以下 18 个：
+
+`AddPaymentInfo`, `AddToCart`, `AddToWishlist`, `CompleteRegistration`, `Contact`, `CustomizeProduct`, `Donate`, `FindLocation`, `InitiateCheckout`, `Lead`, `Purchase`, `Schedule`, `Search`, `StartTrial`, `SubmitApplication`, `Subscribe`, `ViewContent`
+
+**注意**：`PageView` 是 Pixel base code 自动触发的基础事件，不在 `track` 标准事件列表中，但属于官方内置行为。
+
+### "Landing Page View" 不是标准事件
+
+如果你在 Meta 广告后台看到 **"Landing Page View"**：
+- 这是**广告投放的优化目标（Optimization Event）**，不是 Pixel 代码层的标准事件
+- 它不需要前端埋 `fbq('track', 'LandingPageView')`
+- 自 2025 年 7 月起，Meta 已支持不安装 Pixel 也能使用 "Landing Page Views" 作为优化目标
+
+**如果你要追踪"用户访问了落地页"，请使用标准事件 `ViewContent`**。
+
+### 自定义事件（Custom Events）
+
+当用户的业务动作不在上述 18 个标准事件内时，可以发送自定义事件。
+
+**命名规则**：
+- 使用英文，无空格（可用下划线连接）
+- 例如：`DownloadBrochure`, `VideoWatched`, `ConsultationBooked`
+
+**代码示例**：
+
+```javascript
+// 自定义事件 — 不需要 eventID（除非同时使用 CAPI）
+fbq('trackCustom', 'DownloadBrochure', {
+  content_name: 'Product Catalog 2025',
+  content_category: 'Downloads'
+});
+```
+
+**React / Next.js 示例**：
+
+```jsx
+const handleDownload = () => {
+  if (typeof window !== 'undefined' && window.fbq) {
+    window.fbq('trackCustom', 'DownloadBrochure', {
+      content_name: 'Product Catalog 2025'
+    });
+  }
+};
+```
+
+**何时用标准事件、何时用自定义事件**：
+
+| 场景 | 推荐做法 | 原因 |
+|:---|:---|:---|
+| 用户在落地页浏览了产品内容 | `fbq('track', 'ViewContent')` | 标准事件，可直接用于广告优化和受众 |
+| 用户提交了联系表单 | `fbq('track', 'Lead')` | 标准事件，Meta 原生支持转化优化 |
+| 用户下载了白皮书 | `fbq('trackCustom', 'DownloadBrochure')` | 不在 18 个标准事件内，用自定义事件记录 |
+| 用户播放了介绍视频超过 50% | `fbq('trackCustom', 'VideoProgress50')` | 自定义事件，可用于再营销受众 |
+
+---
+
 ## Meta Conversions API (CAPI) - Event Deduplication
 
 If the user also sends events via **Meta Conversions API** (server-side), you **MUST** use `eventID` to prevent duplicate counting.
