@@ -137,6 +137,7 @@ When a user is running **both Meta Pixel and GA4**, generate code that uses **th
 | View content | `ViewContent` | `view_item` | GA4: `view_item` (or `view_item_list`) |
 | Search | `Search` | `search` | Meta: `search_string` / GA4: `search_term` |
 | Page view | `PageView` (auto) | `page_view` (auto) | Usually handled by base code |
+| 20s+ engagement | `ViewContent` (delayed) | `time_on_page` | Meta 用标准事件；GA4 用自定义事件 |
 
 ### Multi-Platform Purchase Example
 
@@ -278,6 +279,64 @@ gtag('event', 'pricing_toggle', { plan: 'pro' });
 // ❌ Wrong
 gtag('event', 'pricingToggle', { plan: 'pro' });
 gtag('event', 'Pricing Toggle', { plan: 'pro' });
+```
+
+---
+
+## Engagement Tracking: Time-On-Page
+
+### 场景：用户停留 20 秒后触发事件
+
+**注意**：默认的 `page_view` 在页面加载时即触发。如果你希望把"停留 20 秒"作为有意义的互动，可以延迟发送一个带 `engagement_time_msec` 的事件。
+
+#### React / Next.js
+
+```tsx
+'use client';
+import { useEffect, useRef } from 'react';
+
+export default function EngagementTracker() {
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.gtag) return;
+
+    const timer = setTimeout(() => {
+      if (hasTriggered.current) return;
+      hasTriggered.current = true;
+
+      // GA4: 20 秒后发送 time_on_page 事件
+      window.gtag('event', 'time_on_page', {
+        page_title: document.title,
+        page_location: window.location.href,
+        engagement_time_msec: 20000
+      });
+    }, 20000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return null;
+}
+```
+
+#### 原生 HTML + JavaScript
+
+```html
+<script>
+(function() {
+  let hasTriggered = false;
+  setTimeout(function() {
+    if (hasTriggered) return;
+    hasTriggered = true;
+    if (window.gtag) {
+      gtag('event', 'time_on_page', {
+        engagement_time_msec: 20000
+      });
+    }
+  }, 20000);
+})();
+</script>
 ```
 
 ---

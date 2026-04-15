@@ -622,6 +622,66 @@ const handleDownload = () => {
 | 用户提交了联系表单 | `fbq('track', 'Lead')` | 标准事件，Meta 原生支持转化优化 |
 | 用户下载了白皮书 | `fbq('trackCustom', 'DownloadBrochure')` | 不在 18 个标准事件内，用自定义事件记录 |
 | 用户播放了介绍视频超过 50% | `fbq('trackCustom', 'VideoProgress50')` | 自定义事件，可用于再营销受众 |
+| 用户在页面停留超过 20 秒 | `fbq('track', 'ViewContent')` 或 `fbq('trackCustom', 'EngagedView')` | 标准/自定义事件，用于过滤低质量流量 |
+
+---
+
+## Engagement Tracking: Time-On-Page
+
+### 场景：用户停留 20 秒后触发事件
+
+**注意**：默认的 `PageView` 在页面加载时即触发。如果你希望把"停留 20 秒"作为有意义的互动，可以延迟发送 `ViewContent`（或自定义事件）。
+
+#### React / Next.js
+
+```tsx
+'use client';
+import { useEffect, useRef } from 'react';
+
+export default function EngagementTracker() {
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const timer = setTimeout(() => {
+      if (hasTriggered.current) return;
+      hasTriggered.current = true;
+
+      // Meta: 20 秒后发送 ViewContent
+      if (window.fbq) {
+        fbq('track', 'ViewContent', {
+          content_name: 'Landing Page - 20s Engagement',
+          content_category: 'Engaged View'
+        });
+      }
+    }, 20000); // 20 秒
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return null;
+}
+```
+
+#### 原生 HTML + JavaScript
+
+```html
+<script>
+(function() {
+  let hasTriggered = false;
+  setTimeout(function() {
+    if (hasTriggered) return;
+    hasTriggered = true;
+    if (window.fbq) {
+      fbq('track', 'ViewContent', {
+        content_name: 'Landing Page - 20s Engagement'
+      });
+    }
+  }, 20000);
+})();
+</script>
+```
 
 ---
 
