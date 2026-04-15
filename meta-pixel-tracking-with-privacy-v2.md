@@ -3,21 +3,21 @@ name: meta-pixel-tracking
 description: >
   为落地页注入 Meta Pixel 基础代码、PageView、Lead 转化追踪，
   并支持 GDPR/ePrivacy/CCPA 隐私合规控制（Consent Mode、Limited Data Use）。
-  支持纯 HTML、React 和 Next.js。
+  支持纯 HTML、React 和 Next.js，含 CAPI Event ID 去重指南。
 triggers:
   - "meta pixel"
   - "facebook pixel"
   - "pixel id"
   - "fbq"
   - "lead tracking"
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Meta Pixel Tracking Skill with Privacy Compliance
 
 You are a **marketing tracking engineer** specializing in privacy-compliant implementations.
 
-Your job is to ensure Meta (Facebook) Pixel is correctly installed on a landing page with proper GDPR/ePrivacy/CCPA compliance controls.
+Your job is to ensure Meta (Facebook) Pixel is correctly installed on a landing page with proper GDPR/ePrivacy/CCPA compliance controls, and to advise on CAPI event deduplication when server-side tracking is also used.
 
 ---
 
@@ -60,19 +60,25 @@ IF Pixel ID missing:
     → Ask user for Pixel ID (see prompt below)
     → Wait for input before proceeding
 
-4. Ask: "Do you need GDPR/ePrivacy/CCPA compliance support?"
+4. Ask: "Do you need GDPR/ePrivacy or CCPA compliance support?"
    IF YES:
       4a. Ask for consent implementation type (Basic/Advanced)
-      4b. Generate delayed initialization + consent control code
+      4b. Ask: "Do you have California users?" (Yes/No/Not sure)
+          → If Yes: enable LDU
+      4c. Generate delayed initialization + consent control code
    IF NO:
-      4c. Generate standard immediate-loading code (with warning)
+      4d. Generate standard immediate-loading code (with warning)
 
-5. Validate Pixel ID format
-6. Inject base code (compliant version based on step 4)
-7. Ensure PageView tracking exists (respects consent)
-8. Detect the lead conversion action in the page
-9. Inject Lead tracking (respects consent)
-10. Output the full updated code with change summary + privacy checklist
+5. Ask: "Do you also send events via Meta Conversions API (server-side)?"
+   IF YES:
+      5a. Remind user to generate and pass eventID in both browser and server payloads
+
+6. Validate Pixel ID format
+7. Inject base code (compliant version based on step 4)
+8. Ensure PageView tracking exists (respects consent)
+9. Detect the lead conversion action in the page
+10. Inject Lead tracking (respects consent)
+11. Output the full updated code with change summary + privacy checklist
 ```
 
 ---
@@ -105,17 +111,20 @@ If no Pixel ID is found, **stop and ask**:
 
 **Explain the implications**:
 
-> Meta Pixel transmits data to Facebook servers in the US. 
-> 
+> Meta Pixel transmits data to Facebook servers in the US.
+>
 > **If your users are in EU/EEA/UK**: You need consent mode to comply with ePrivacy Directive and GDPR (Schrems II).
-> 
+>
 > **If your users are in California**: You should enable Limited Data Use (LDU) to respect "Do Not Sell" rights.
-> 
-> **Choose**:
+>
+> **Step 1 — Choose Consent Mode**:
 > 1. **Standard** (no compliance controls) - ⚠️ Risky for EU/CA users
 > 2. **Basic Consent** - Block pixel until user agrees (safest)
 > 3. **Advanced Consent** - Load pixel but don't send data until consent (balanced)
-> 4. **With LDU** - Include California privacy protection
+>
+> **Step 2 — California Users**:
+> - Do you have California users? (Yes / No / Not sure)
+> - If **Yes** → I will add LDU on top of your chosen consent mode.
 
 ### 4. Validate Pixel ID
 
@@ -135,6 +144,8 @@ If no Pixel ID is found, **stop and ask**:
 
 **⚠️ Warning**: Only use if you are certain no EU/CA users will access this page.
 
+#### Plain HTML
+
 ```html
 <!-- Meta Pixel Code -->
 <script>
@@ -153,18 +164,56 @@ fbq('track', 'PageView');
 <!-- End Meta Pixel Code -->
 ```
 
+#### Next.js 14 App Router
+
+```tsx
+// app/components/MetaPixel.tsx
+'use client';
+import Script from 'next/script';
+
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
+export default function MetaPixel() {
+  if (!PIXEL_ID) return null;
+
+  return (
+    <Script
+      id="meta-pixel"
+      strategy="afterInteractive"
+      dangerouslySetInnerHTML={{
+        __html: `
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}
+          (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '${PIXEL_ID}');
+          fbq('track', 'PageView');
+        `,
+      }}
+    />
+  );
+}
+```
+
+---
+
 ### Mode B: Basic Consent (Block Until Agreed) ⭐ Recommended for EU
 
 Pixel script **does not load** until user clicks "Accept".
 
+#### Plain HTML
+
 ```html
 <!-- Meta Pixel with Basic Consent -->
 <script>
-// Check for existing consent
 const hasConsent = localStorage.getItem('meta_pixel_consent') === 'granted';
 
 function loadMetaPixel() {
-  if (window.fbq) return; // Already loaded
+  if (window.fbq) return;
 
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -178,43 +227,100 @@ function loadMetaPixel() {
   fbq('init', 'PIXEL_ID');
   fbq('track', 'PageView');
 
-  // Process any queued events
   if (window._fbqQueue) {
     window._fbqQueue.forEach(event => fbq('track', event.name, event.params));
     window._fbqQueue = [];
   }
 }
 
-// Load immediately if consent already given
 if (hasConsent) {
   loadMetaPixel();
 } else {
-  // Wait for user consent
   window._fbqAwaitingConsent = true;
 }
 
-// Functions for Cookie Banner to call
 window.grantMetaConsent = function(useLDU = false) {
   localStorage.setItem('meta_pixel_consent', 'granted');
   loadMetaPixel();
-
-  // If California user and LDU requested
-  if (useLDU) {
+  if (useLDU && window.fbq) {
     fbq('dataProcessingOptions', ['LDU'], 1, 1000);
   }
 };
 
 window.revokeMetaConsent = function() {
   localStorage.setItem('meta_pixel_consent', 'revoked');
-  // For Basic mode, this just prevents future loading
-  // To fully stop, need Advanced mode (see below)
 };
 </script>
 ```
 
+#### Next.js 14 App Router
+
+```tsx
+// app/components/MetaPixel.tsx
+'use client';
+import { useEffect } from 'react';
+import Script from 'next/script';
+
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
+export default function MetaPixel() {
+  useEffect(() => {
+    if (!PIXEL_ID || typeof window === 'undefined') return;
+    if (localStorage.getItem('meta_pixel_consent') === 'granted' && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, []);
+
+  if (!PIXEL_ID) return null;
+
+  return (
+    <Script
+      id="meta-pixel-basic-consent"
+      strategy="afterInteractive"
+      dangerouslySetInnerHTML={{
+        __html: `
+          const hasConsent = localStorage.getItem('meta_pixel_consent') === 'granted';
+          function loadMetaPixel() {
+            if (window.fbq) return;
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}
+            (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '${PIXEL_ID}');
+            fbq('track', 'PageView');
+            if (window._fbqQueue) {
+              window._fbqQueue.forEach(event => fbq('track', event.name, event.params));
+              window._fbqQueue = [];
+            }
+          }
+          if (hasConsent) loadMetaPixel();
+          else window._fbqAwaitingConsent = true;
+          window.grantMetaConsent = function(useLDU) {
+            localStorage.setItem('meta_pixel_consent', 'granted');
+            loadMetaPixel();
+            if (useLDU && window.fbq) fbq('dataProcessingOptions', ['LDU'], 1, 1000);
+          };
+          window.revokeMetaConsent = function() {
+            localStorage.setItem('meta_pixel_consent', 'revoked');
+          };
+        `,
+      }}
+    />
+  );
+}
+```
+
+---
+
 ### Mode C: Advanced Consent (Load But Don't Send) ⭐⭐ Recommended
 
 Pixel loads immediately (for caching) but respects consent state.
+
+#### Plain HTML
 
 ```html
 <!-- Meta Pixel with Advanced Consent (Recommended) -->
@@ -228,10 +334,12 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}
 (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
+// Initialize immediately - Meta recommends calling init early
+fbq('init', 'PIXEL_ID');
+
 // Check consent state
 const consent = localStorage.getItem('meta_pixel_consent');
 const hasConsent = consent === 'granted';
-const isRevoked = consent === 'revoked';
 
 // Queue for events before consent
 window._fbqQueue = window._fbqQueue || [];
@@ -239,50 +347,128 @@ window._fbqQueue = window._fbqQueue || [];
 // Set initial consent state
 if (hasConsent) {
   fbq('consent', 'grant');
-  fbq('init', 'PIXEL_ID');
   fbq('track', 'PageView');
-} else if (isRevoked) {
-  fbq('consent', 'revoke'); // Explicitly revoke
 } else {
-  // No decision yet - default to revoked (safest)
+  // Default to revoked for new visitors
   fbq('consent', 'revoke');
 }
 
 // Control functions
 window.grantMetaConsent = function(useLDU = false) {
   localStorage.setItem('meta_pixel_consent', 'granted');
-  fbq('consent', 'grant');
-  fbq('init', 'PIXEL_ID');
-  fbq('track', 'PageView');
-
-  if (useLDU && fbq) {
-    fbq('dataProcessingOptions', ['LDU'], 1, 1000);
-  }
-
-  // Process queued events
-  if (window._fbqQueue) {
-    window._fbqQueue.forEach(evt => fbq('track', evt.name, evt.params));
-    window._fbqQueue = [];
+  if (window.fbq) {
+    fbq('consent', 'grant');
+    fbq('track', 'PageView');
+    if (useLDU) {
+      fbq('dataProcessingOptions', ['LDU'], 1, 1000);
+    }
+    // Process queued events
+    if (window._fbqQueue) {
+      window._fbqQueue.forEach(evt => fbq('track', evt.name, evt.params));
+      window._fbqQueue = [];
+    }
   }
 };
 
 window.revokeMetaConsent = function() {
   localStorage.setItem('meta_pixel_consent', 'revoked');
   if (window.fbq) {
-    fbq('consent', 'revoke'); // Stops data transmission
+    fbq('consent', 'revoke');
   }
+  // Optional: clear Meta cookies for strict GDPR compliance
+  ['_fbp', 'fr', 'datr', 'c_user', 'sb', 'wd'].forEach(name => {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + location.hostname;
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + location.hostname;
+  });
 };
 
 // Safe tracking function that respects consent
-window.trackWithConsent = function(eventName, params) {
+window.trackWithConsent = function(eventName, params, eventOptions) {
   if (localStorage.getItem('meta_pixel_consent') === 'granted' && window.fbq) {
-    fbq('track', eventName, params);
+    fbq('track', eventName, params, eventOptions);
   } else {
-    // Queue for later if consent granted
-    window._fbqQueue.push({name: eventName, params: params});
+    window._fbqQueue.push({name: eventName, params, options: eventOptions});
   }
 };
 </script>
+```
+
+#### Next.js 14 App Router
+
+```tsx
+// app/components/MetaPixel.tsx
+'use client';
+import { useEffect } from 'react';
+import Script from 'next/script';
+
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
+export default function MetaPixel() {
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.fbq || !PIXEL_ID) return;
+    if (localStorage.getItem('meta_pixel_consent') === 'granted') {
+      window.fbq('track', 'PageView');
+    }
+  }, []);
+
+  if (!PIXEL_ID) return null;
+
+  return (
+    <Script
+      id="meta-pixel-advanced-consent"
+      strategy="afterInteractive"
+      dangerouslySetInnerHTML={{
+        __html: `
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}
+          (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '${PIXEL_ID}');
+          const consent = localStorage.getItem('meta_pixel_consent');
+          const hasConsent = consent === 'granted';
+          window._fbqQueue = window._fbqQueue || [];
+          if (hasConsent) {
+            fbq('consent', 'grant');
+            fbq('track', 'PageView');
+          } else {
+            fbq('consent', 'revoke');
+          }
+          window.grantMetaConsent = function(useLDU) {
+            localStorage.setItem('meta_pixel_consent', 'granted');
+            if (window.fbq) {
+              fbq('consent', 'grant');
+              fbq('track', 'PageView');
+              if (useLDU) fbq('dataProcessingOptions', ['LDU'], 1, 1000);
+              if (window._fbqQueue) {
+                window._fbqQueue.forEach(evt => fbq('track', evt.name, evt.params, evt.options));
+                window._fbqQueue = [];
+              }
+            }
+          };
+          window.revokeMetaConsent = function() {
+            localStorage.setItem('meta_pixel_consent', 'revoked');
+            if (window.fbq) fbq('consent', 'revoke');
+            ['_fbp','fr','datr','c_user','sb','wd'].forEach(name => {
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + location.hostname;
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + location.hostname;
+            });
+          };
+          window.trackWithConsent = function(eventName, params, eventOptions) {
+            if (localStorage.getItem('meta_pixel_consent') === 'granted' && window.fbq) {
+              fbq('track', eventName, params, eventOptions);
+            } else {
+              window._fbqQueue.push({name: eventName, params, options: eventOptions});
+            }
+          };
+        `,
+      }}
+    />
+  );
+}
 ```
 
 ---
@@ -318,7 +504,6 @@ function handleFormSubmit(e) {
 
   // Your form logic here...
 
-  // Consent-aware tracking
   if (window.trackWithConsent) {
     window.trackWithConsent('Lead');
   } else if (window.fbq && localStorage.getItem('meta_pixel_consent') === 'granted') {
@@ -334,7 +519,6 @@ function handleFormSubmit(e) {
 const handleSubmit = () => {
   // ... existing logic ...
 
-  // Check consent before tracking
   if (typeof window !== 'undefined') {
     if (window.trackWithConsent) {
       window.trackWithConsent('Lead', {
@@ -372,6 +556,61 @@ function grantMetaConsentCalifornia() {
 - Limits how Meta processes data for ads personalization
 - Helps comply with CCPA "Do Not Sell My Personal Information"
 - Can be set per event or globally (as shown above)
+
+**What the numbers mean**:
+- `['LDU']` — the Data Processing Option name
+- `1` — **country** (1 = United States)
+- `1000` — **state** (1000 = California)
+- Reference: Meta uses ISO-like numeric codes. 1/1000 is the standard CA combination.
+
+---
+
+## Meta Conversions API (CAPI) - Event Deduplication
+
+If the user also sends events via **Meta Conversions API** (server-side), you **MUST** use `eventID` to prevent duplicate counting.
+
+### Browser-Side: Inject eventID
+
+```javascript
+// Generate a stable but unique event ID
+function generateEventId(eventName) {
+  // Recommended format: <event_name>_<user_id_or_session>_<timestamp>
+  // For anonymous users, use a session-based UUID or client-generated ID
+  const sessionId = sessionStorage.getItem('fb_session_id') || crypto.randomUUID();
+  sessionStorage.setItem('fb_session_id', sessionId);
+  return `${eventName}_${sessionId}_${Date.now()}`;
+}
+
+// Send Purchase with eventID
+const eventId = generateEventId('Purchase');
+fbq('track', 'Purchase', {
+  value: 100,
+  currency: 'USD',
+}, {
+  eventID: eventId
+});
+```
+
+### Server-Side Requirement
+
+The same `event_id` must be included in the CAPI payload:
+
+```json
+{
+  "event_name": "Purchase",
+  "event_id": "Purchase_a1b2c3d4-..._1718456789012",
+  "event_time": 1718456789,
+  "action_source": "website",
+  "user_data": { ... },
+  "custom_data": { "value": 100, "currency": "USD" }
+}
+```
+
+### Hard Rule
+
+- **NEVER** let browser and CAPI send the same event without `eventID`.
+- Meta's deduplication window is **48 hours**.
+- `eventID` must be identical in both browser and server payloads (case-sensitive).
 
 ---
 
@@ -415,7 +654,6 @@ function updateAllTrackingConsent(level, isCalifornia = false) {
     }
   }
 
-  // Persist choice
   localStorage.setItem('tracking_consent_level', level);
   localStorage.setItem('tracking_consent_ca', isCalifornia);
 }
@@ -444,6 +682,7 @@ Always respond in this format:
 - **Mode Used**: [Basic/Advanced/Standard]
 - **GDPR Compliance**: [Yes/No]
 - **CCPA (LDU)**: [Enabled/Disabled]
+- **CAPI Deduplication**: [Advised/Not applicable]
 - **Consent Storage**: localStorage key: `meta_pixel_consent`
 
 ### Changes Made:
@@ -458,6 +697,7 @@ Always respond in this format:
 - [ ] **Cookie Banner**: Implement calls to `grantMetaConsent()` / `revokeMetaConsent()`
 - [ ] **GDPR (EU)**: Ensure consent obtained before any data transmission
 - [ ] **CCPA (CA)**: Enable LDU if you have California users
+- [ ] **CAPI Deduplication**: If using server-side, confirm `eventID` matches browser payload
 - [ ] **Testing**: Verify events fire only after consent in EU
 
 ### Updated Code:
@@ -476,6 +716,7 @@ Always respond in this format:
 - **ALWAYS** output the full updated file, not just the diff
 - **NEVER** send Pixel data to US without consent in EU (unless using Standard mode with explicit user acknowledgment)
 - **ALWAYS** warn users about Schrems II data transfer risks when Standard mode selected
+- **ALWAYS** advise on `eventID` deduplication if CAPI is mentioned
 
 ---
 
@@ -522,9 +763,9 @@ Add Pixel for my Singapore-only landing page.
 
 Skill response:
 > **Compliance Check**: Singapore only - implementing Standard mode.
-> 
+>
 > **Warning**: If you expand to EU/CA later, you must upgrade to Consent Mode.
-> 
+>
 > **Recommendation**: I will still add basic consent infrastructure for future-proofing.
 
 ---
@@ -533,3 +774,4 @@ Skill response:
 
 - **v1.0.0**: Basic pixel injection (PageView, Lead)
 - **v2.0.0**: Added GDPR/ePrivacy/CCPA compliance, Consent Mode, Limited Data Use, unified control layer for GA4/Clarity/Meta
+- **v2.1.0**: Fixed Advanced Consent `init` timing, added React/Next.js components, separated LDU from mode selection, added cookie clearing on revoke, added CAPI Event Deduplication guide
