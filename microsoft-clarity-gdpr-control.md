@@ -249,37 +249,14 @@ function handleOneTrustConsent() {
 window.addEventListener('consent.onetrust', handleOneTrustConsent);
 ```
 
-## 前置检查清单（部署前必须完成）
+### Post-Deployment Checklist:
 
-在 Clarity Dashboard 中确认：
-
-- [ ] **关闭自动 Cookie**：Project > Settings > Setup > Advanced Settings > **Cookies: OFF** ⚠️
-- [ ] **启用 Consent Mode**：确保项目支持 Consent V2（2025年10月31日后强制）
-- [ ] **地域设置**：如果用户来自 EEA/UK/瑞士，确保 Consent Signal 已发送 [^31^]
-
-## 验证测试方法
-
-### 1. 控制台验证
-
-```javascript
-// 查看当前同意状态
-clarity('metadata', (data, upgrade, consent) => {
-  console.log('Clarity Consent:', consent);
-  // 应返回: { analytics_storage: "granted", ad_storage: "denied" }
-}, false, true, true);
-```
-
-### 2. Network 面板验证
-
-- 打开 DevTools > Network > 筛选 "clarity.ms"
-- 触发同意变更（点击 Banner 按钮）
-- 查看请求 payload 中应包含 `consent` 参数
-
-### 3. Dashboard 验证
-
-- 进入 Clarity Dashboard > Settings > Consent
-- 查看 "Consent Mode Events" 统计
-- 应看到不同同意级别的会话分布
+- [ ] **Dashboard 前置设置**：Clarity Project > Settings > Setup > Advanced Settings > **Cookies: OFF**（必须！）
+- [ ] **Consent Mode 启用**：确认项目支持 Consent V2（2025年10月31日后强制）
+- [ ] **控制台验证**：运行 `clarity('metadata', (d,u,c) => console.log(c), false, true, true)`，应返回 `{analytics_storage: "...", ad_storage: "..."}`
+- [ ] **Network 验证**：触发 Banner 按钮后，Network 面板筛选 "clarity.ms"，payload 应包含 `consent` 参数
+- [ ] **Dashboard 验证**：进入 Settings > Consent，查看 Consent Mode Events 分布是否正常
+- [ ] **地域合规**：EEA/UK/瑞士用户确保 Consent Signal 已发送；中国用户确认符合《个人信息保护法》；美国用户确认 CCPA "Do Not Sell"
 
 ## 故障排查
 
@@ -326,12 +303,7 @@ clarity('metadata', (data, upgrade, consent) => {
 > **重要前置设置**：
 > 在 Clarity Dashboard > Settings > Setup > Advanced Settings 中，**关闭 Cookies 选项**（必须！）
 >
-> **部署后验证**：
-> 1. 打开浏览器控制台
-> 2. 运行：`clarity('metadata', (d, u, c) => console.log(c), false, true, true)`
-> 3. 应看到 `{analytics_storage: "denied/granted", ad_storage: "denied/granted"}`
->
 > **法律合规说明**：
-> - EEA/UK/瑞士用户：必须在 2025年10月31日前部署 [^31^]
+> - EEA/UK/瑞士用户：必须在 2025年10月31日前部署
 > - 中国用户：符合《个人信息保护法》最小必要原则
 > - 美国用户：符合 CCPA "Do Not Sell" 要求

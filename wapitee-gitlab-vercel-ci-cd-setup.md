@@ -260,6 +260,16 @@ build:
 - Nuxt: `.output`
 - Vite/Vue/React: `dist`
 
+### Post-Deployment Checklist:
+
+- [ ] **GitLab Variables**：确认 `VERCEL_TOKEN`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID` 已添加并设为 Masked + Protected
+- [ ] **文件创建**：确认 `.gitlab-ci.yml` 已提交到项目根目录
+- [ ] **首次测试**：执行 `git push origin main`，查看 GitLab CI/CD Pipelines 是否正常触发
+- [ ] **Vercel 部署确认**：登录 Vercel Dashboard，检查是否出现来自 GitLab 的新部署记录
+- [ ] **Preview 环境**：从非 main 分支 push，确认是否生成 Preview Deployment URL
+- [ ] **日志检查**：若构建失败，查看 Pipeline 日志中的 `build` stage 输出
+- [ ] **Token 有效期**：确认 `VERCEL_TOKEN` 未过期，Hobby 计划部署额度未超
+
 ## 限制与提示
 
 - **中断机制**：此 Skill 设计为对话式交互，不假设任何默认值

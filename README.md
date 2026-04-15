@@ -12,6 +12,7 @@
 | **P0** | 用户提到 `git push`、`commit`、Wapitee 内部 GitLab、SSH 配置（端口 8822） | `wapitee-gitlab-push.md` | `wapitee-gitlab-push` |
 | **P0** | 用户提到 `gitlab vercel` 集成、自建 GitLab 部署到 Vercel、CI/CD 配置 | `wapitee-gitlab-vercel-ci-cd-setup.md` | `gitlab-vercel-ci-cd-setup` |
 | **P0** | 用户提到 Meta Pixel / Facebook Pixel / `fbq` / Lead 追踪 / Pixel ID | `meta-pixel-tracking-with-privacy-v2.md` | `meta-pixel-tracking` |
+| **P0** | 用户提到 Google Analytics 4 / `ga4` / `gtag` / GA4 埋点 / 需要 Meta-GA4 事件对照 | `google-analytics-4-setup.md` | `google-analytics-4-setup` |
 | **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
 | **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
 
@@ -41,6 +42,15 @@ ELSE IF 用户输入包含 (push OR commit OR ssh OR 8822 OR git.wapitee.io):
     → 使用 wapitee-gitlab-push.md
 ELSE:
     → 询问用户是内部 GitLab 操作还是 Vercel CI/CD 配置
+```
+
+### 3. Meta + GA4 组合场景
+
+```
+IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analytics OR gtag):
+    → 同时读取 meta-pixel-tracking.md 和 google-analytics-4-setup.md
+    → 特别注意：Meta 事件使用 PascalCase，GA4 事件使用 snake_case
+    → 为同一业务场景生成两套正确命名的事件代码
 ```
 
 ---
@@ -81,6 +91,15 @@ ELSE:
   - 与 Cookiebot、OneTrust、Osano 或自建 Banner 集成
 - **必备信息**：用户选择的同意级别（拒绝 / 仅分析 / 全部同意）
 
+### `google-analytics-4-setup`
+- **文件**：`google-analytics-4-setup.md`
+- **作用**：Google Analytics 4 基础埋点、标准事件生成、以及 Meta-GA4 事件命名对照
+- **核心能力**：
+  - 生成 gtag 基础代码与 Consent Mode V2 配置
+  - 提供完整的 Meta ↔ GA4 标准事件对照表（避免命名混用）
+  - 支持多平台统一 consent 控制层
+- **必备信息**：GA4 Measurement ID（如缺失会中断并询问）
+
 ### `microsoft-clarity-setup`
 - **文件**：`microsoft-clarity-setup.md`
 - **作用**：Microsoft Clarity 基础埋点与智能自定义事件生成
@@ -92,6 +111,38 @@ ELSE:
 ---
 
 ## 给团队的使用方式
+
+### 核心原则：用户直接提需求，AI 自动匹配
+
+**你不需要手动 @skill 或告诉 AI 该用哪个文件。** 只要在系统 Prompt 中配置好规则，AI 会自己先读 `README.md`，然后根据你的需求自动选择正确的 skill。如果需求涉及多个 skill（比如同时埋 Meta + GA4），AI 会自动组合执行。
+
+### 系统 Prompt 配置（推荐）
+
+```
+You have access to the following skill directory: /Users/jacobg/Desktop/wapitee-skill
+
+Before answering any user request:
+1. Read /Users/jacobg/Desktop/wapitee-skill/README.md to determine which skill to use
+2. Read /Users/jacobg/Desktop/wapitee-skill/FEEDBACK_LOG.md for any known issues or lessons learned
+3. Then read the matched skill file(s)
+4. Follow the instructions in that skill strictly
+5. After generating the output, present the Post-Deployment Checklist from the skill
+6. Ask the user: "是否需要将本次遇到的问题或改进建议记录到 FEEDBACK_LOG.md？"
+```
+
+### 组合调用示例
+
+| 用户说的话 | AI 的行为 |
+|:---|:---|
+| "帮我加 Meta Pixel" | 读 `meta-pixel-tracking.md` → 生成代码 → 输出自检清单 |
+| "我要同时做 Meta Pixel 和 GA4，还有 Cookie Banner" | 读 `meta-pixel-tracking.md` + `google-analytics-4-setup.md` + `microsoft-clarity-gdpr-control.md` → 生成统一 consent 控制层 + 各平台正确的事件命名 |
+| " push 代码到 GitLab" | 读 `wapitee-gitlab-push.md` → 检查 SSH → 执行 push |
+
+### 反馈日志的用法
+
+`FEEDBACK_LOG.md` 是团队的共同知识库：
+- **读取**：AI 每次回答前会自动读取，避免重复踩坑。
+- **写入**：AI 不会自动写。它会在完成任务后**主动问你** "要不要记一条反馈？"，只有你同意，它才会追加。
 
 ### 方式 A：Prompt 引用（推荐）
 

@@ -375,19 +375,14 @@ useFormTracking(currentStep);
 
 ---
 
-### 验证自定义事件是否生效
+### Post-Deployment Checklist:
 
-**方法 1：浏览器控制台测试**
-```javascript
-// 在页面加载后运行
-window.clarity("event", "test_event");
-// 然后查看 Clarity Dashboard > Smart Events
-```
-
-**方法 2：Network 面板检查**
-- 打开 DevTools > Network
-- 筛选 "clarity.ms"
-- 触发事件后应看到 POST 请求，payload 中包含 `e:test_event`
+- [ ] **生产环境确认**：代码在生产环境执行（开发环境通常被过滤）
+- [ ] **控制台验证**：运行 `window.clarity("event", "test_event")`，然后在 Dashboard > Smart Events 查看
+- [ ] **Network 验证**：打开 DevTools > Network，筛选 "clarity.ms"，触发事件后确认 payload 包含 `e:你的事件名`
+- [ ] **事件命名检查**：确认事件名只包含字母、数字、下划线，且大小写拼写正确
+- [ ] **等待时间**：Clarity 数据通常有 30 分钟延迟，不要过早判断未生效
+- [ ] **SPA 路由**：如果是 React/Vue SPA，确认 useEffect/onMounted 中正确重建了事件监听器
 
 ---
 
