@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Wapitee Skill Installer — one-time setup for team-wide skill distribution
+set -e
+
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+EXPECTED_DIR="$HOME/.claude/skills/wapitee"
+SKILLS_DIR="$HOME/.claude/skills"
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+
+WAPITEE_BLOCK_START="# >>> WAPITEE SKILLS START"
+WAPITEE_BLOCK_END="# <<< WAPITEE SKILLS END"
+
+# ─── 1. Ensure repo is linked at ~/.claude/skills/wapitee ────────────────────
+if [ "$REPO_DIR" != "$EXPECTED_DIR" ]; then
+    echo "Linking repository to $EXPECTED_DIR..."
+    mkdir -p "$(dirname "$EXPECTED_DIR")"
+    if [ -L "$EXPECTED_DIR" ] || [ ! -e "$EXPECTED_DIR" ]; then
+        ln -snf "$REPO_DIR" "$EXPECTED_DIR"
+    else
+        echo "Error: $EXPECTED_DIR already exists and is not a symlink." >&2
+        echo "  Remove it manually and re-run setup." >&2
+        exit 1
+    fi
+fi
+
+# ─── 2. Register each skill as a native Claude Code skill ────────────────────
+# Claude Code discovers skills under ~/.claude/skills/*/
+# We create a directory per skill with a symlinked SKILL.md
+linked=()
+for skill_file in "$EXPECTED_DIR"/*.md; do
+    [ -f "$skill_file" ] || continue
+    filename=$(basename "$skill_file")
+    case "$filename" in
+        README.md|FEEDBACK_LOG.md|SKILL_TEMPLATE.md) continue ;;
+    esac
+    skill_name="${filename%.md}"
+    target_dir="$SKILLS_DIR/wapitee-$skill_name"
+    mkdir -p "$target_dir"
+    if [ -L "$target_dir/SKILL.md" ] || [ ! -e "$target_dir/SKILL.md" ]; then
+        ln -snf "$skill_file" "$target_dir/SKILL.md"
+        linked+=("wapitee-$skill_name")
+    fi
+done
+
+# ─── 3. Inject global prompt into ~/.claude/CLAUDE.md ────────────────────────
+# This ensures every Claude Code session starts by reading the registry.
+mkdir -p "$(dirname "$CLAUDE_MD")"
+
+if [ -f "$CLAUDE_MD" ]; then
+    awk "/$WAPITEE_BLOCK_START/{flag=1;next} /$WAPITEE_BLOCK_END/{flag=0;next} !flag" "$CLAUDE_MD" > "$CLAUDE_MD.tmp" && mv "$CLAUDE_MD.tmp" "$CLAUDE_MD"
+fi
+
+cat >> "$CLAUDE_MD" <<EOF
+$WAPITEE_BLOCK_START
+# Wapitee Skill Registry
+
+You have access to the Wapitee Skill Registry at $EXPECTED_DIR.
+
+Before answering any user request related to development, deployment, tracking, analytics, or DevOps:
+1. Read $EXPECTED_DIR/README.md to determine which skill to use
+2. Read $EXPECTED_DIR/FEEDBACK_LOG.md for any known issues or lessons learned
+3. Then read the matched skill file(s)
+4. Follow the instructions in that skill strictly
+5. After generating the output, present the Post-Deployment Checklist from the skill
+6. Ask the user: "是否需要将本次遇到的问题或改进建议记录到 FEEDBACK_LOG.md？"
+$WAPITEE_BLOCK_END
+EOF
+
+# ─── 4. Done ─────────────────────────────────────────────────────────────────
+echo ""
+echo "Wapitee skills installed successfully."
+echo "  Registry:     $EXPECTED_DIR"
+echo "  Linked skills: ${linked[*]:-<none>}"
+echo "  Global config: $CLAUDE_MD"
+echo ""
+echo "How team members should install:"
+echo "  git clone http://git.wapitee.io/fundation/wptskill.git ~/.claude/skills/wapitee"
+echo "  cd ~/.claude/skills/wapitee && ./setup"
+echo ""
+echo "How to update when skills change:"
+echo "  cd ~/.claude/skills/wapitee && git pull && ./setup"
+echo ""

@@ -119,11 +119,11 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
 ### 系统 Prompt 配置（推荐）
 
 ```
-You have access to the following skill directory: /Users/jacobg/Desktop/wapitee-skill
+You have access to the following skill directory: ~/.claude/skills/wapitee
 
 Before answering any user request:
-1. Read /Users/jacobg/Desktop/wapitee-skill/README.md to determine which skill to use
-2. Read /Users/jacobg/Desktop/wapitee-skill/FEEDBACK_LOG.md for any known issues or lessons learned
+1. Read ~/.claude/skills/wapitee/README.md to determine which skill to use
+2. Read ~/.claude/skills/wapitee/FEEDBACK_LOG.md for any known issues or lessons learned
 3. Then read the matched skill file(s)
 4. Follow the instructions in that skill strictly
 5. After generating the output, present the Post-Deployment Checklist from the skill
@@ -149,10 +149,10 @@ Before answering any user request:
 在系统 Prompt 或 Project Instructions 中加入：
 
 ```
-You have access to the following skill directory: /Users/jacobg/Desktop/wapitee-skill
+You have access to the following skill directory: ~/.claude/skills/wapitee
 
 Before answering any user request:
-1. Read /Users/jacobg/Desktop/wapitee-skill/README.md to determine which skill to use
+1. Read ~/.claude/skills/wapitee/README.md to determine which skill to use
 2. Then read the matched skill file
 3. Follow the instructions in that skill strictly
 ```
