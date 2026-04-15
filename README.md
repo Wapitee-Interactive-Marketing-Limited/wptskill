@@ -43,6 +43,7 @@ cd ~/.claude/skills/wapitee && git pull && ./setup
 | **P0** | 用户提到 Google Analytics 4 / `ga4` / `gtag` / GA4 埋点 / 需要 Meta-GA4 事件对照 | `google-analytics-4-setup.md` | `google-analytics-4-setup` |
 | **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
 | **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
+| **P1** | 用户提到 `wapitee survey webhook`、`survey 推送`、`webhook 接收`、`留邮箱推送` | `wapitee-survey-webhook-setup.md` | `wapitee-survey-webhook-setup` |
 
 ---
 
@@ -135,6 +136,15 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 生成基础追踪代码（HTML / Next.js / React / Vue / Nuxt）
   - 根据自然语言描述自动生成自定义事件代码（hover / click / scroll / form）
 - **必备信息**：Clarity Project ID（基础埋点模式）
+
+### `wapitee-survey-webhook-setup`
+- **文件**：`wapitee-survey-webhook-setup.md`
+- **作用**：Wapitee Survey Webhook 推送配置
+- **核心能力**：
+  - 引导用户从 wapitee.io/admin 获取 Webhook URL 和 Secret
+  - 生成 Next.js / React / Vue / HTML / Node.js 的推送代码
+  - 强制规范 answers 字段为 `q_1`, `q_2`, `q_3` 格式
+- **必备信息**：`WEBHOOK_URL`、`WEBHOOK_SECRET`、`FRAMEWORK`、前端表单字段名
 
 ---
 
