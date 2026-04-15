@@ -1,6 +1,34 @@
 <!-- ai-directive: skill-registry -->
 # Wapitee Skill Registry
 
+## 团队安装指南
+
+### macOS / Linux / WSL (Git Bash)
+
+```bash
+git clone http://git.wapitee.io/fundation/wptskill.git ~/.claude/skills/wapitee
+cd ~/.claude/skills/wapitee && ./setup
+```
+
+### Windows (PowerShell / CMD)
+
+```powershell
+git clone http://git.wapitee.io/fundation/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
+cd "$env:LOCALAPPDATA\Claude\skills\wapitee"
+```
+
+> Windows 用户若无法运行 Bash 脚本，可手动将本仓库路径配置到 Claude Code 的 Prompt 中，或等待后续 `setup.ps1` 脚本支持。
+
+### 更新 skill
+
+```bash
+cd ~/.claude/skills/wapitee && git pull && ./setup
+```
+
+> 若更新仅修改现有 skill 内容，`git pull` 即可生效。若**新增/删除**了 skill 文件，需重新运行 `./setup` 刷新符号链接。
+
+---
+
 > **AI 读取规则**：当用户发起任何请求时，**优先读取本文件**，根据用户意图匹配下方技能列表，然后再读取对应的具体 skill 文件。不要直接猜测该用哪个 skill。
 
 ---
