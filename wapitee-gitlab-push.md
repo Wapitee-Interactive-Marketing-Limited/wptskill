@@ -33,9 +33,11 @@ Host git.wapitee.io
     HostName git.wapitee.io
     Port 8822
     User git
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/id_ed25519_wapitee
     IdentitiesOnly yes
 ```
+
+> **注意**：为避免与其他平台（如 GitHub）的 SSH key 冲突，Wapitee GitLab 使用专属 key 文件 `~/.ssh/id_ed25519_wapitee`。若本地已存在通用的 `id_ed25519`，仍建议生成独立的 `id_ed25519_wapitee` 并在 `config` 中指定。
 
 写入后设置权限：`chmod 600 ~/.ssh/config`
 
@@ -44,8 +46,16 @@ Host git.wapitee.io
 当用户要求推送代码时，按以下顺序执行：
 
 1. **检查 SSH 配置** — 确认 `~/.ssh/config` 已包含上述 8822 端口配置，若无则自动添加。
-2. **检查 SSH 密钥** — 确认 `~/.ssh/id_ed25519` 存在。若不存在，生成密钥并将公钥内容展示给用户，提示用户前往 `https://git.wapitee.io → Preferences → SSH Keys` 手动添加，等待用户确认后再继续。
+2. **检查 SSH 密钥** — 按以下优先级确认可用密钥：
+   - 若 `~/.ssh/id_ed25519_wapitee` 存在 → 直接使用。
+   - 若 `~/.ssh/id_ed25519` 存在但 **未配置** Wapitee 专属 key → 生成新的 `~/.ssh/id_ed25519_wapitee`，并更新 `~/.ssh/config` 的 `IdentityFile` 指向新 key。
+   - 若两者都不存在 → 生成 `~/.ssh/id_ed25519_wapitee`。
+
+   **生成新 key 后**：将公钥内容展示给用户，提示用户前往 `https://git.wapitee.io → Preferences → SSH Keys` 手动添加，**等待用户确认后再继续**。
 3. **测试连接** — 执行 `ssh -T git@git.wapitee.io`，确认返回 `Welcome to GitLab`。
+   - 若返回 `Permission denied (publickey)`：
+     - 检查当前 `config` 中的 `IdentityFile`。
+     - 若指向的是通用 key（如 `id_ed25519`）→ 生成新的 `id_ed25519_wapitee`，更新 `config`，展示新公钥给用户，等待用户添加到 GitLab 后重试。
 4. **执行 Git 操作** — 按需执行 `git add`、`git commit`、`git push`。
 
 ## Commit Message 规范
