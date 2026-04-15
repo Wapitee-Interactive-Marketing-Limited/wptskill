@@ -622,15 +622,15 @@ const handleDownload = () => {
 | 用户提交了联系表单 | `fbq('track', 'Lead')` | 标准事件，Meta 原生支持转化优化 |
 | 用户下载了白皮书 | `fbq('trackCustom', 'DownloadBrochure')` | 不在 18 个标准事件内，用自定义事件记录 |
 | 用户播放了介绍视频超过 50% | `fbq('trackCustom', 'VideoProgress50')` | 自定义事件，可用于再营销受众 |
-| 用户在页面停留超过 20 秒 | `fbq('track', 'ViewContent')` 或 `fbq('trackCustom', 'EngagedView')` | 标准/自定义事件，用于过滤低质量流量 |
+| 用户在 landing page 停留超过 5 秒 | `fbq('trackCustom', 'EngagedView')` | **Wapitee 推荐做法**：自定义事件，避免与产品页 `ViewContent` 混淆 |
 
 ---
 
 ## Engagement Tracking: Time-On-Page
 
-### 场景：用户停留 20 秒后触发事件
+### 场景：Landing Page 停留 5 秒后触发 `EngagedView`
 
-**注意**：默认的 `PageView` 在页面加载时即触发。如果你希望把"停留 20 秒"作为有意义的互动，可以延迟发送 `ViewContent`（或自定义事件）。
+**Wapitee 规范**：对于单页 landing page，不要用延迟的 `ViewContent` 来代表"用户有兴趣"。`ViewContent` 应该留给真正的产品/内容详情页浏览。Landing page 的浅层停留应使用自定义事件 `EngagedView`。
 
 #### React / Next.js
 
@@ -648,14 +648,15 @@ export default function EngagementTracker() {
       if (hasTriggered.current) return;
       hasTriggered.current = true;
 
-      // Meta: 20 秒后发送 ViewContent
+      // Meta: 5 秒后发送自定义事件 EngagedView
       if (window.fbq) {
-        fbq('track', 'ViewContent', {
-          content_name: 'Landing Page - 20s Engagement',
-          content_category: 'Engaged View'
+        fbq('trackCustom', 'EngagedView', {
+          content_name: document.title,
+          content_category: 'Landing Page Engagement',
+          engagement_time_msec: 5000
         });
       }
-    }, 20000); // 20 秒
+    }, 5000); // 5 秒
 
     return () => clearTimeout(timer);
   }, []);
@@ -674,11 +675,13 @@ export default function EngagementTracker() {
     if (hasTriggered) return;
     hasTriggered = true;
     if (window.fbq) {
-      fbq('track', 'ViewContent', {
-        content_name: 'Landing Page - 20s Engagement'
+      fbq('trackCustom', 'EngagedView', {
+        content_name: document.title,
+        content_category: 'Landing Page Engagement',
+        engagement_time_msec: 5000
       });
     }
-  }, 20000);
+  }, 5000);
 })();
 </script>
 ```

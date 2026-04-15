@@ -137,7 +137,7 @@ When a user is running **both Meta Pixel and GA4**, generate code that uses **th
 | View content | `ViewContent` | `view_item` | GA4: `view_item` (or `view_item_list`) |
 | Search | `Search` | `search` | Meta: `search_string` / GA4: `search_term` |
 | Page view | `PageView` (auto) | `page_view` (auto) | Usually handled by base code |
-| 20s+ engagement | `ViewContent` (delayed) | `time_on_page` | Meta 用标准事件；GA4 用自定义事件 |
+| Landing page 停留 5s+ | `EngagedView` (custom) | `engaged_view` | Wapitee 推荐：自定义事件，避免与 `ViewContent`/`view_item` 混淆 |
 
 ### Multi-Platform Purchase Example
 
@@ -285,9 +285,9 @@ gtag('event', 'Pricing Toggle', { plan: 'pro' });
 
 ## Engagement Tracking: Time-On-Page
 
-### 场景：用户停留 20 秒后触发事件
+### 场景：Landing Page 停留 5 秒后触发 `engaged_view`
 
-**注意**：默认的 `page_view` 在页面加载时即触发。如果你希望把"停留 20 秒"作为有意义的互动，可以延迟发送一个带 `engagement_time_msec` 的事件。
+**Wapitee 规范**：对于单页 landing page，不要用延迟的 `view_item`/`page_view` 来代表"用户有兴趣"。`view_item` 应该留给真正的产品/内容详情页浏览。Landing page 的浅层停留应使用自定义事件 `engaged_view`。
 
 #### React / Next.js
 
@@ -305,13 +305,13 @@ export default function EngagementTracker() {
       if (hasTriggered.current) return;
       hasTriggered.current = true;
 
-      // GA4: 20 秒后发送 time_on_page 事件
-      window.gtag('event', 'time_on_page', {
+      // GA4: 5 秒后发送自定义事件 engaged_view
+      window.gtag('event', 'engaged_view', {
         page_title: document.title,
         page_location: window.location.href,
-        engagement_time_msec: 20000
+        engagement_time_msec: 5000
       });
-    }, 20000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -330,11 +330,11 @@ export default function EngagementTracker() {
     if (hasTriggered) return;
     hasTriggered = true;
     if (window.gtag) {
-      gtag('event', 'time_on_page', {
-        engagement_time_msec: 20000
+      gtag('event', 'engaged_view', {
+        engagement_time_msec: 5000
       });
     }
-  }, 20000);
+  }, 5000);
 })();
 </script>
 ```
