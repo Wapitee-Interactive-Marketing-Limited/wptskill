@@ -66,6 +66,7 @@ cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull; .\setup.ps1
 | **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
 | **P1** | 用户提到 `wapitee survey webhook`、`survey 推送`、`webhook 接收`、`留邮箱推送` | `wapitee-survey-webhook-setup.md` | `wapitee-survey-webhook-setup` |
 | **P1** | 用户提到 `TyphoonX`、`Landing Page` 埋点、`page_view`、`engaged_view`、`generate_lead`、轻量级分析追踪 | `landingpage_typhoonx_installation.md` | `landingpage-typhoonx-installation` |
+| **P1** | 用户提到 `Wapitee 水印`、`watermark`、`console logo`、`console 水印` | `wapitee-watermark.md` | `wapitee-watermark` |
 
 ---
 
@@ -151,6 +152,16 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 使用 `sendBeacon` 优先，确保页面关闭时数据不丢失
 - **必备信息**：`merchant_id`（如 `TPX-LANDING-001`）
 
+### `wapitee-watermark`
+- **文件**：`wapitee-watermark.md`
+- **作用**：在网站浏览器控制台中打印 Wapitee ASCII Logo 与品牌信息
+- **核心能力**：
+  - 支持 Next.js / React / Vue / Nuxt / Svelte / Astro / 纯 HTML 等框架
+  - 在应用最早入口注入，确保打开 DevTools 即刻可见
+  - 严格的 Wapitee 品牌规范（ASCII Logo、文案、颜色 `#E42767`）
+  - 零副作用：只操作 `console.log`，不修改 DOM、不阻塞渲染
+- **必备信息**：无（自动检测框架并注入）
+
 ---
 
 ## 给团队的使用方式
@@ -179,6 +190,7 @@ Before answering any user request:
 |:---|:---|
 | "帮我加 Meta Pixel" | 读 `meta-pixel-tracking.md` → 生成代码 → 输出自检清单 |
 | "我要同时做 Meta Pixel 和 GA4，还有 Cookie Banner" | 读 `meta-pixel-tracking.md` + `google-analytics-4-setup.md` + `microsoft-clarity-gdpr-control.md` → 生成统一 consent 控制层 + 各平台正确的事件命名 |
+| "添加 Wapitee 水印" | 读 `wapitee-watermark.md` → 检测框架 → 在最早入口注入 console logo → 输出检查清单 |
 
 ### 反馈日志的用法
 
