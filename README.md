@@ -1,31 +1,54 @@
 <!-- ai-directive: skill-registry -->
 # Wapitee Skill Registry
 
-## 团队安装指南
+本项目是 Wapitee 团队内部使用的 Claude Code Skill 仓库，用于集中存储和维护与业务相关的 AI 技能文件。
 
-### macOS / Linux / WSL (Git Bash)
+本仓库将内部工作流、配置规范、埋点方案及部署流程等知识沉淀为结构化的 Markdown skill 文件。安装后，Claude Code 会优先读取本文件，根据用户意图匹配下方的 skill 列表，随后加载对应的具体 skill 文件生成回复。
+
+## 安装 Skill
+
+### macOS
 
 ```bash
+# 克隆仓库到本地 Claude skills 目录
 git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git ~/.claude/skills/wapitee
+
+# 执行安装脚本
 cd ~/.claude/skills/wapitee && ./setup
 ```
 
-### Windows (PowerShell / CMD)
+### Windows
 
 ```powershell
+# 克隆仓库到本地 Claude skills 目录
 git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
+
+# 执行安装脚本
 cd "$env:LOCALAPPDATA\Claude\skills\wapitee"
+.\setup.ps1
 ```
 
-> Windows 用户若无法运行 Bash 脚本，可手动将本仓库路径配置到 Claude Code 的 Prompt 中，或等待后续 `setup.ps1` 脚本支持。
+## 更新 Skill
 
-### 更新 skill
+### macOS
 
 ```bash
+# 仅更新 Skill
+cd ~/.claude/skills/wapitee && git pull
+
+# 更新 Skill 和安装脚本
 cd ~/.claude/skills/wapitee && git pull && ./setup
 ```
 
-> 若更新仅修改现有 skill 内容，`git pull` 即可生效。若**新增/删除**了 skill 文件，需重新运行 `./setup` 刷新符号链接。
+### Windows
+
+```powershell
+# 仅更新 Skill
+cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull
+
+# 更新 Skill 和安装脚本
+cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull; .\setup.ps1
+```
 
 ---
 
@@ -174,7 +197,7 @@ Before answering any user request:
 |:---|:---|
 | "帮我加 Meta Pixel" | 读 `meta-pixel-tracking.md` → 生成代码 → 输出自检清单 |
 | "我要同时做 Meta Pixel 和 GA4，还有 Cookie Banner" | 读 `meta-pixel-tracking.md` + `google-analytics-4-setup.md` + `microsoft-clarity-gdpr-control.md` → 生成统一 consent 控制层 + 各平台正确的事件命名 |
-| " push 代码到 GitLab" | 读 `wapitee-gitlab-push.md` → 检查 SSH → 执行 push |
+| "push 代码到 GitLab" | 读 `wapitee-gitlab-push.md` → 检查 SSH → 执行 push |
 
 ### 反馈日志的用法
 
