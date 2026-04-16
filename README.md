@@ -1,31 +1,54 @@
 <!-- ai-directive: skill-registry -->
 # Wapitee Skill Registry
 
-## 团队安装指南
+本项目是 Wapitee 团队内部使用的 Claude Code Skill 仓库，用于集中存储和维护与业务相关的 AI 技能文件。
 
-### macOS / Linux / WSL (Git Bash)
+本仓库将内部工作流、配置规范、埋点方案及部署流程等知识沉淀为结构化的 Markdown skill 文件。安装后，Claude Code 会优先读取本文件，根据用户意图匹配下方的 skill 列表，随后加载对应的具体 skill 文件生成回复。
+
+## 安装 Skill
+
+### macOS
 
 ```bash
+# 克隆仓库到本地 Claude skills 目录
 git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git ~/.claude/skills/wapitee
+
+# 执行安装脚本
 cd ~/.claude/skills/wapitee && ./setup
 ```
 
-### Windows (PowerShell / CMD)
+### Windows
 
 ```powershell
+# 克隆仓库到本地 Claude skills 目录
 git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
+
+# 执行安装脚本
 cd "$env:LOCALAPPDATA\Claude\skills\wapitee"
+.\setup.ps1
 ```
 
-> Windows 用户若无法运行 Bash 脚本，可手动将本仓库路径配置到 Claude Code 的 Prompt 中，或等待后续 `setup.ps1` 脚本支持。
+## 更新 Skill
 
-### 更新 skill
+### macOS
 
 ```bash
+# 仅更新 Skill
+cd ~/.claude/skills/wapitee && git pull
+
+# 更新 Skill 和安装脚本
 cd ~/.claude/skills/wapitee && git pull && ./setup
 ```
 
-> 若更新仅修改现有 skill 内容，`git pull` 即可生效。若**新增/删除**了 skill 文件，需重新运行 `./setup` 刷新符号链接。
+### Windows
+
+```powershell
+# 仅更新 Skill
+cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull
+
+# 更新 Skill 和安装脚本
+cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull; .\setup.ps1
+```
 
 ---
 
@@ -42,6 +65,7 @@ cd ~/.claude/skills/wapitee && git pull && ./setup
 | **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
 | **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
 | **P1** | 用户提到 `wapitee survey webhook`、`survey 推送`、`webhook 接收`、`留邮箱推送` | `wapitee-survey-webhook-setup.md` | `wapitee-survey-webhook-setup` |
+| **P1** | 用户提到 `TyphoonX`、`Landing Page` 埋点、`page_view`、`engaged_view`、`generate_lead`、轻量级分析追踪 | `landingpage_typhoonx_installation.md` | `landingpage-typhoonx-installation` |
 
 ---
 
@@ -115,6 +139,17 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 生成 Next.js / React / Vue / HTML / Node.js 的推送代码
   - 强制规范 answers 字段为 `q_1`, `q_2`, `q_3` 格式
 - **必备信息**：`WEBHOOK_URL`、`WEBHOOK_SECRET`、`FRAMEWORK`、前端表单字段名
+
+### `landingpage-typhoonx-installation`
+- **文件**：`landingpage_typhoonx_installation.md`
+- **作用**：Landing Page 专用 TyphoonX 轻量级追踪安装
+- **核心能力**：
+  - 自动触发 `page_view` 和 `engaged_view`（页面停留 5 秒）
+  - 手动触发 `generate_lead` 线索事件
+  - 完整收集 ClickHouse 标准数据字段（UTM、TTM、FB、Google、Kickbooster 等）
+  - `client_id` 留空（非 Shopify 场景）
+  - 使用 `sendBeacon` 优先，确保页面关闭时数据不丢失
+- **必备信息**：`merchant_id`（如 `TPX-LANDING-001`）
 
 ---
 
