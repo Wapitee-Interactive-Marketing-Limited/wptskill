@@ -10,7 +10,7 @@ triggers:
   - "添加水印"
   - "console logo"
   - "console 水印"
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Wapitee Watermark Skill
@@ -47,8 +47,24 @@ version: 1.0.0
 
 1. **ASCII Art** — 颜色 `#E42767`，粗体
 2. **"🚀 Crafted with ❤️ by Wapitee "** — 颜色 `#E42767`，`font-size: 14px`，粗体
-3. **"Credit to Max & Jacob"** — 颜色 `#E42767`，`font-size: 14px`，粗体
+3. **第三行文案** — 颜色 `#E42767`，`font-size: 14px`，粗体（**由用户选择，不再固定**）
 4. **"Contact us 👉 hi@wapitee.io "** — 颜色 `#E42767`，`font-size: 14px`，粗体
+
+### 第三行文案选择规则
+
+在注入水印前，**必须询问用户**第三行文案写什么：
+
+> Wapitee 水印第三行可以写一句品牌副标题，你想写什么？
+>
+> 建议选项（选一个，或自定义）：
+> 1. **Wapitee Market Validation Service** (Recommended)
+> 2. Credit to Max & Jacob
+> 3. Powered by Wapitee
+> 4. 其他（请直接输入你想写的文案）
+
+- 如果用户未回复，**默认使用**：`Wapitee Market Validation Service`
+- 如果用户说"随便"、"你决定"、"默认"，**使用**：`Wapitee Market Validation Service`
+- 如果用户输入了自定义文案，**直接采用用户输入**（保持原样，不做大小写转换）
 
 ## 执行流程
 
@@ -58,9 +74,12 @@ version: 1.0.0
 3. 检测水印代码是否已存在
    IF 存在 → 跳过，不重复注入
    IF 不存在 → 继续
-4. 根据框架选择最佳注入位置（越早越好）
-5. 生成对应框架的水印代码
-6. 输出完整修改后的文件 + 变更摘要 + 检查清单
+4. 询问用户第三行文案（见上文"第三行文案选择规则"）
+   IF 用户未回复或说默认 → 使用 "Wapitee Market Validation Service"
+   IF 用户给出自定义文案 → 直接使用
+5. 根据框架选择最佳注入位置（越早越好）
+6. 生成对应框架的水印代码（将 THIRD_LINE_TEXT 替换为用户选择的文案）
+7. 输出完整修改后的文件 + 变更摘要 + 检查清单
 ```
 
 ## 注入位置优先级（按框架）
@@ -100,7 +119,7 @@ version: 1.0.0
     "color: #E42767; font-size: 14px; font-weight: bold;"
   );
   console.log(
-    "%cCredit to Max & Jacob",
+    "%cTHIRD_LINE_TEXT",
     "color: #E42767; font-size: 14px; font-weight: bold;"
   );
   console.log(
@@ -133,7 +152,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 \`;
                 console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
                 console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-                console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+                console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
                 console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
               })();
             `,
@@ -166,7 +185,7 @@ if (typeof window !== "undefined") {
 
   console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
   console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-  console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+  console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
   console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
 }
 
@@ -194,7 +213,7 @@ const asciiArt = `
             `;
 console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
 console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
 console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -221,7 +240,7 @@ const asciiArt = `
             `;
 console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
 console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
 console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
 
 createApp(App).mount("#app");
@@ -242,7 +261,7 @@ export default defineNuxtPlugin(() => {
             `;
   console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
   console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-  console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+  console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
   console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
 });
 ```
@@ -265,7 +284,7 @@ export default defineNuxtPlugin(() => {
             `;
     console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
     console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-    console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+    console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
     console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
   }
 </script>
@@ -296,7 +315,7 @@ export default defineNuxtPlugin(() => {
         `;
         console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
         console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-        console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+        console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
         console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
       })();
     </script>
@@ -327,7 +346,7 @@ export default defineNuxtPlugin(() => {
         `;
         console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
         console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
-        console.log("%cCredit to Max & Jacob", "color: #E42767; font-size: 14px; font-weight: bold;");
+        console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
         console.log("%cContact us 👉 hi@wapitee.io ", "color: #E42767; font-size: 14px; font-weight: bold;");
       })();
     </script>
@@ -359,7 +378,7 @@ export default defineNuxtPlugin(() => {
 
 - [ ] 打开浏览器 DevTools → Console，确认 Wapitee Logo 和文案已显示
 - [ ] 确认 Logo 颜色为 `#E42767`（洋红色）
-- [ ] 确认文案顺序正确：Logo → "Crafted with..." → "Credit to Max & Jacob" → "Contact us..."
+- [ ] 确认文案顺序正确：Logo → "Crafted with..." → 第三行文案 → "Contact us..."
 - [ ] 刷新页面，确认水印在页面加载早期即出现
 - [ ] 确认没有重复输出（同一 Logo 只出现一次）
 
