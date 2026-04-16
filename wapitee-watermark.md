@@ -10,7 +10,7 @@ triggers:
   - "添加水印"
   - "console logo"
   - "console 水印"
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Wapitee Watermark Skill
@@ -98,13 +98,31 @@ version: 1.1.0
 
 ## 实现代码
 
+### 浏览器兼容说明
+
+Edge 浏览器的 DevTools Console 对部分 Unicode box-drawing 字符（如 `╗`、`╔`、`║`）的等宽渲染存在偏差，会导致 ASCII Logo 错位。因此水印代码需要**先检测浏览器**，再输出对应版本：
+
+- **非 Edge 浏览器**（Chrome / Safari / Firefox 等）：使用原始 Unicode box-drawing 版本
+- **Edge 浏览器**：使用纯标准 ASCII 字符版本（`/`、`\`、`|`、`_`），避免渲染错位
+
 ### 通用水印函数（所有框架共用）
 
 ```javascript
 (function printWapiteeWatermark() {
   if (typeof window === "undefined") return;
 
-  const asciiArt = `
+  const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+
+  const asciiArt = isEdge
+    ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+    : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -142,14 +160,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function(){
                 if (typeof window === "undefined") return;
-                var asciiArt = \`
+                var isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+                var asciiArt = isEdge
+                  ? \`
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+                  \`
+                  : \`
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
  ██║███╗██║██╔══██║██╔═══╝ ██║   ██║   ██╔══╝  ██╔══╝
  ╚███╔███╔╝██║  ██║██║     ██║   ██║   ███████╗███████╗
   ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝     ╚═╝   ╚═╝   ╚══════╝╚══════╝
-                \`;
+                  \`;
                 console.log("%c" + asciiArt, "color: #E42767; font-weight: bold;");
                 console.log("%c🚀 Crafted with ❤️ by Wapitee ", "color: #E42767; font-size: 14px; font-weight: bold;");
                 console.log("%cTHIRD_LINE_TEXT", "color: #E42767; font-size: 14px; font-weight: bold;");
@@ -174,7 +202,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 import type { AppProps } from "next/app";
 
 if (typeof window !== "undefined") {
-  const asciiArt = `
+  const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+  const asciiArt = isEdge
+    ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+    : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -203,7 +241,17 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 
 // Wapitee Console Watermark
-const asciiArt = `
+const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+const asciiArt = isEdge
+  ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+  : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -230,7 +278,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 import { createApp } from "vue";
 import App from "./App.vue";
 
-const asciiArt = `
+const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+const asciiArt = isEdge
+  ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+  : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -251,7 +309,17 @@ createApp(App).mount("#app");
 ```ts
 // plugins/wapitee-watermark.client.ts
 export default defineNuxtPlugin(() => {
-  const asciiArt = `
+  const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+  const asciiArt = isEdge
+    ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+    : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -274,7 +342,17 @@ export default defineNuxtPlugin(() => {
 <!-- src/routes/+layout.svelte -->
 <script>
   if (typeof window !== "undefined") {
-    const asciiArt = `
+    const isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+    const asciiArt = isEdge
+      ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+            `
+      : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -305,7 +383,17 @@ export default defineNuxtPlugin(() => {
     <title>Wapitee</title>
     <script is:inline>
       (function(){
-        var asciiArt = `
+        var isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+        var asciiArt = isEdge
+          ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+        `
+          : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -336,7 +424,17 @@ export default defineNuxtPlugin(() => {
     <title>Wapitee</title>
     <script>
       (function(){
-        var asciiArt = `
+        var isEdge = typeof navigator !== "undefined" && /Edg/.test(navigator.userAgent);
+        var asciiArt = isEdge
+          ? `
+ __          __  _      ____       _     _ _
+ \\ \\        / / | |    |  _ \\     | |   | | |
+  \\ \\  /\\  / /__| |__  | |_) | ___| |__ | | |_
+   \\ \\/  \\/ / _ \\ '_ \\ |  _ < / _ \\ '_ \\| | __|
+    \\  /\\  /  __/ |_) || |_) |  __/ |_) | | |_
+     \\/  \\/ \\___|_.__/ |____/ \\___|_.__/|_|\\__|
+        `
+          : `
  ██╗    ██╗ █████╗ ██████╗ ██╗████████╗███████╗███████╗
  ██║    ██║██╔══██╗██╔══██╗██║╚══██╔══╝██╔════╝██╔════╝
  ██║ █╗ ██║███████║██████╔╝██║   ██║   █████╗  █████╗
@@ -381,6 +479,7 @@ export default defineNuxtPlugin(() => {
 - [ ] 确认文案顺序正确：Logo → "Crafted with..." → 第三行文案 → "Contact us..."
 - [ ] 刷新页面，确认水印在页面加载早期即出现
 - [ ] 确认没有重复输出（同一 Logo 只出现一次）
+- [ ] 在 **Edge 浏览器** 中打开 Console，确认 Logo 没有错位或变形（Edge 会显示纯 ASCII 版本）
 
 ### 更新后的代码
 
@@ -395,4 +494,5 @@ export default defineNuxtPlugin(() => {
 - **ALWAYS** 将水印放在应用**最早可执行的入口**
 - **ALWAYS** 在 SSR 框架中使用 `typeof window !== "undefined"` 检查或 `.client` 插件，避免服务端报错
 - **ALWAYS** 优先使用内联 `<script>` 或模块顶层代码，而不是 `useEffect` / `onMounted` 等延迟生命周期
+- **ALWAYS** 在水印代码中包含 Edge 浏览器检测与纯 ASCII 备用版本，防止 Logo 在 Edge Console 中错位
 - **ALWAYS** 输出完整的修改后文件，而非仅给出 diff
