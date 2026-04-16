@@ -37,8 +37,6 @@ cd ~/.claude/skills/wapitee && git pull && ./setup
 
 | 匹配优先级 | 触发场景（关键词/意图） | Skill 文件名 | Skill 名称 |
 |:---|:---|:---|:---|
-| **P0** | 用户提到 `git push`、`commit`、Wapitee 内部 GitLab、SSH 配置（端口 8822） | `wapitee-gitlab-push.md` | `wapitee-gitlab-push` |
-| **P0** | 用户提到 `gitlab vercel` 集成、自建 GitLab 部署到 Vercel、CI/CD 配置 | `wapitee-gitlab-vercel-ci-cd-setup.md` | `gitlab-vercel-ci-cd-setup` |
 | **P0** | 用户提到 Meta Pixel / Facebook Pixel / `fbq` / Lead 追踪 / Pixel ID | `meta-pixel-tracking-with-privacy-v2.md` | `meta-pixel-tracking` |
 | **P0** | 用户提到 Google Analytics 4 / `ga4` / `gtag` / GA4 埋点 / 需要 Meta-GA4 事件对照 | `google-analytics-4-setup.md` | `google-analytics-4-setup` |
 | **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
@@ -62,18 +60,7 @@ ELSE:
     → 询问用户具体需求（隐私合规 vs 基础埋点/自定义事件）
 ```
 
-### 2. GitLab 二选一
-
-```
-IF 用户输入包含 (vercel OR ci/cd OR 部署 OR deployment OR gitlab-ci.yml):
-    → 使用 wapitee-gitlab-vercel-ci-cd-setup.md
-ELSE IF 用户输入包含 (push OR commit OR ssh OR 8822 OR git.wapitee.io):
-    → 使用 wapitee-gitlab-push.md
-ELSE:
-    → 询问用户是内部 GitLab 操作还是 Vercel CI/CD 配置
-```
-
-### 3. Meta + GA4 组合场景
+### 2. Meta + GA4 组合场景
 
 ```
 IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analytics OR gtag):
@@ -85,23 +72,6 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
 ---
 
 ## Skill 清单（详细版）
-
-### `wapitee-gitlab-push`
-- **文件**：`wapitee-gitlab-push.md`
-- **作用**：Wapitee 内部 GitLab 的默认配置与 push 工作流
-- **核心能力**：
-  - 自动检查/写入 `~/.ssh/config`（端口 8822）
-  - 生成 ed25519 SSH 密钥并提示用户添加到 GitLab
-  - 执行 `git add / commit / push`（commit message 强制中文）
-- **必备信息**：无（会自动检查环境）
-
-### `gitlab-vercel-ci-cd-setup`
-- **文件**：`wapitee-gitlab-vercel-ci-cd-setup.md`
-- **作用**：自建 GitLab CE 与 Vercel 的自动化部署集成
-- **核心能力**：
-  - 交互式收集 `VERCEL_TOKEN`、`GITLAB_URL`、`PROJECT_ID` 等必要信息
-  - 生成 `.gitlab-ci.yml`、环境变量设置脚本、项目初始化脚本
-- **必备信息**：`VERCEL_TOKEN`、`GITLAB_URL`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID`、`FRAMEWORK`
 
 ### `meta-pixel-tracking`
 - **文件**：`meta-pixel-tracking-with-privacy-v2.md`
@@ -174,7 +144,6 @@ Before answering any user request:
 |:---|:---|
 | "帮我加 Meta Pixel" | 读 `meta-pixel-tracking.md` → 生成代码 → 输出自检清单 |
 | "我要同时做 Meta Pixel 和 GA4，还有 Cookie Banner" | 读 `meta-pixel-tracking.md` + `google-analytics-4-setup.md` + `microsoft-clarity-gdpr-control.md` → 生成统一 consent 控制层 + 各平台正确的事件命名 |
-| " push 代码到 GitLab" | 读 `wapitee-gitlab-push.md` → 检查 SSH → 执行 push |
 
 ### 反馈日志的用法
 

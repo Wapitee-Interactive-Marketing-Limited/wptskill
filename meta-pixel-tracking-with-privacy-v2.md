@@ -3,6 +3,7 @@ name: meta-pixel-tracking
 description: >
   为落地页注入 Meta Pixel 基础代码、PageView、Lead 转化追踪，
   并支持 GDPR/ePrivacy/CCPA 隐私合规控制（Consent Mode、Limited Data Use）。
+  Lead 事件自动集成 SHA-256 邮箱哈希（Advanced Matching），确保与 CAPI 服务器端哈希一致。
   支持纯 HTML、React 和 Next.js，含 CAPI Event ID 去重指南。
 triggers:
   - "meta pixel"
@@ -10,7 +11,7 @@ triggers:
   - "pixel id"
   - "fbq"
   - "lead tracking"
-version: 2.1.0
+version: 2.2.0
 ---
 
 # Meta Pixel Tracking Skill with Privacy Compliance
@@ -77,7 +78,20 @@ IF Pixel ID missing:
 7. Inject base code (compliant version based on step 4)
 8. Ensure PageView tracking exists (respects consent)
 9. Detect the lead conversion action in the page
-10. Inject Lead tracking (respects consent)
+    9a. Look for `<form onSubmit>` or `<button type="submit">` first (real form submission)
+    9b. IF only a text-matching button is found (e.g. "Subscribe"):
+         → Analyze its onClick handler
+         → IF it opens a popup/modal/hidden form (e.g. `setShowForm`, `style.display`, modal toggle):
+             → Do NOT attach Lead to this button
+             → Search inside the popup/modal/hidden area for the REAL form and attach Lead there
+         → IF it directly submits data (e.g. `fetch`, `axios`, form post):
+             → Attach Lead to this button
+10. Check if the lead form contains an email input
+    IF YES:
+      10a. Inject client-side SHA-256 hash helper (`hashEmail`)
+      10b. Update Lead event to include hashed `em` parameter
+    IF NO:
+      10c. Inject standard Lead tracking
 11. Output the full updated code with change summary + privacy checklist
 ```
 
@@ -481,55 +495,146 @@ Search for the lead trigger in this priority order:
 
 | Priority | Pattern |
 |----------|---------|
-| 1 | `<form onSubmit={...}>` or `<form onsubmit="...">` |
-| 2 | `<button type="submit">` |
-| 3 | Button with text: `Submit`, `Contact`, `Book`, `Get Started` |
+| 1 | `<form onSubmit={...}>` or `<form onsubmit="...">` — **真实表单提交** |
+| 2 | `<button type="submit">` 位于 `<form>` 内部 — **表单提交按钮** |
+| 3 | 按钮文本匹配 `Submit` / `Contact` / `Book` / `Get Started` / `Subscribe` — **仅当按钮直接导致转化时才采纳** |
 
-### Inject Lead Tracking (Consent-Aware)
+#### 关键判断规则（必读）
+
+**当你匹配到 Priority 3 的按钮时，必须先判断它是否只是"打开表单"而不是"真正提交"**：
+
+- **如果只是打开弹窗 / 显示隐藏表单**（例如 `onClick={() => setShowForm(true)}`、`data-toggle="modal"`、`#popup-form`）：
+  - ❌ **不要**把 `Lead` 挂在这个按钮上
+  - ✅ 继续搜索弹窗/隐藏区域内的**真实表单**，把 `Lead` 挂在表单的 `onSubmit` 或 `type="submit"` 按钮上
+
+- **如果按钮直接导致数据提交**（例如 `fetch()`、`axios.post`、直接跳转感谢页）：
+  - ✅ 可以在此按钮上挂 `Lead`
+
+**常见误判场景**：
+- 页面上有一个 "Subscribe" 按钮，点击后弹出邮箱输入框 → 这不是 Lead，**表单提交才是 Lead**
+- "Get Started" 按钮跳转到注册页 → 如果当前页只是跳转，不收集信息，则不在当前页挂 Lead
+
+### Inject Lead Tracking (Consent-Aware + Email Hashing)
 
 **Check first**: Does `fbq('track', 'Lead')` already exist?
 - If **yes** → do not inject again
 - If **no** → attach to the detected handler using `trackWithConsent` (if using Advanced mode)
 
-#### Plain HTML (Advanced Mode)
+**Mandatory for Lead events**: If the form collects **email**, you **must** include the hashed email in the Lead event to enable Advanced Matching.
+
+#### Plain HTML (Advanced Mode) — 真实表单提交
 
 ```html
-<form onsubmit="handleFormSubmit(event)">
-  <!-- form fields -->
-</form>
+<!-- 示例：按钮只是打开弹窗，Lead 不应挂在这里 -->
+<button onclick="document.getElementById('popup').style.display='block'">
+  Subscribe
+</button>
+
+<!-- 弹窗内的真实表单 -->
+<div id="popup" style="display:none;">
+  <form id="leadForm">
+    <input type="email" id="email" name="email" required />
+    <button type="submit">Submit</button>
+  </form>
+</div>
 
 <script>
-function handleFormSubmit(e) {
+async function hashEmail(email) {
+  if (!email) return '';
+  const normalized = email.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+document.getElementById('leadForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+
+  const email = document.getElementById('email').value;
+  const hashedEmail = await hashEmail(email);
 
   // Your form logic here...
 
+  const leadParams = {
+    content_name: 'Newsletter Subscribe',
+    content_category: 'Lead Generation',
+    em: hashedEmail
+  };
+
   if (window.trackWithConsent) {
-    window.trackWithConsent('Lead');
+    window.trackWithConsent('Lead', leadParams);
   } else if (window.fbq && localStorage.getItem('meta_pixel_consent') === 'granted') {
-    fbq('track', 'Lead');
+    fbq('track', 'Lead', leadParams);
   }
-}
+});
 </script>
 ```
 
-#### React / Next.js (Advanced Mode)
+#### React / Next.js (Advanced Mode) — 真实表单提交
 
-```jsx
-const handleSubmit = () => {
-  // ... existing logic ...
+```tsx
+import { useState } from 'react';
+import { hashEmail } from '@/utils/hashEmail';
 
-  if (typeof window !== 'undefined') {
-    if (window.trackWithConsent) {
-      window.trackWithConsent('Lead', {
-        content_name: 'Contact Form',
-        content_category: 'Lead Generation'
-      });
-    } else if (window.fbq && localStorage.getItem('meta_pixel_consent') === 'granted') {
-      window.fbq('track', 'Lead');
+export default function SubscribeSection() {
+  const [showForm, setShowForm] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const hashedEmail = await hashEmail(email);
+
+    // ... existing logic (e.g. API call) ...
+
+    const leadParams = {
+      content_name: 'Newsletter Subscribe',
+      content_category: 'Lead Generation',
+      em: hashedEmail
+    };
+
+    if (typeof window !== 'undefined') {
+      if (window.trackWithConsent) {
+        window.trackWithConsent('Lead', leadParams);
+      } else if (window.fbq && localStorage.getItem('meta_pixel_consent') === 'granted') {
+        window.fbq('track', 'Lead', leadParams);
+      }
     }
-  }
-};
+  };
+
+  return (
+    <div>
+      {/* 这个按钮只是打开表单，不要在这里挂 Lead */}
+      <button onClick={() => setShowForm(true)}>Subscribe</button>
+
+      {showForm && (
+        <form onSubmit={handleSubmit}>
+          <input type="email" name="email" required />
+          <button type="submit">Confirm</button>
+        </form>
+      )}
+    </div>
+  );
+}
+```
+
+#### If CAPI Is Used
+
+Add `eventID` to the Lead event so browser and server can deduplicate:
+
+```javascript
+const eventId = `Lead_${hashedEmail.slice(0, 16)}_${Date.now()}`;
+
+if (window.trackWithConsent) {
+  window.trackWithConsent('Lead', leadParams, { eventID: eventId });
+} else if (window.fbq) {
+  fbq('track', 'Lead', leadParams, { eventID: eventId });
+}
+
+// Then send the SAME eventId in your CAPI payload
 ```
 
 ---
@@ -562,6 +667,99 @@ function grantMetaConsentCalifornia() {
 - `1` — **country** (1 = United States)
 - `1000` — **state** (1000 = California)
 - Reference: Meta uses ISO-like numeric codes. 1/1000 is the standard CA combination.
+
+---
+
+## Advanced Matching & Email Hashing for Lead Events
+
+### Why Hash Email?
+
+For **Lead** events, Meta uses **Advanced Matching** to match website visitors to Facebook/Instagram accounts. The most important identifier is the user's **email address** (`em`).
+
+**Key facts**:
+- Meta's `fbevents.js` **auto-hashes** plain-text `em`/`ph`/`fn`/`ln` with SHA-256 before transmission.
+- **However**, if you also send events via **Conversions API (CAPI)**, your server must hash the same data **manually**.
+- **Mismatch risk**: If browser auto-hash and server manual-hash use different normalization (uppercase vs lowercase, extra spaces), Meta cannot deduplicate or match them.
+- **Wapitee recommendation**: **Normalize and hash client-side first**, then pass the pre-hashed value to `fbq`. This guarantees the browser hash matches your future CAPI hash.
+
+### Data Normalization Rules (Before Hashing)
+
+| Field | Normalization |
+|-------|---------------|
+| `em` (email) | Trim whitespace, convert to **lowercase**, remove `mailto:` |
+| `ph` (phone) | Strip all non-numeric characters, prepend **country code** (e.g. `+86`) |
+| `fn` / `ln` | Trim, convert to **lowercase**, remove accents if possible |
+
+### Client-Side SHA-256 Hash Helper
+
+#### Plain JavaScript
+
+```javascript
+async function hashEmail(email) {
+  if (!email) return '';
+  const normalized = email.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+```
+
+#### React / Next.js
+
+```tsx
+// utils/hashEmail.ts
+export async function hashEmail(email: string): Promise<string> {
+  if (!email) return '';
+  const normalized = email.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+```
+
+### Passing Hashed Email to `fbq`
+
+You can inject hashed email either at **init** (best for multi-page sessions) or at **event time** (best for single-page forms).
+
+#### Option A: At `fbq('init')`
+
+```javascript
+const hashedEmail = await hashEmail(userEmail);
+fbq('init', 'PIXEL_ID', {
+  em: hashedEmail,
+  // ph: await hashPhone(userPhone),
+});
+```
+
+#### Option B: At Event Time (Recommended for Lead forms)
+
+```javascript
+const hashedEmail = await hashEmail(formData.email);
+fbq('track', 'Lead', {
+  content_name: 'Contact Form',
+  content_category: 'Lead Generation',
+  em: hashedEmail,
+});
+```
+
+**Important**: Do **not** mix plain text and hashed values. Pick one approach for all user data parameters.
+
+### Matching Browser + CAPI Hashes
+
+If you plan to send the same Lead via CAPI, use the **exact same normalized string** and **SHA-256** on your server:
+
+```python
+# Python server-side example
+import hashlib
+
+email = "User@Example.com".strip().lower()
+hashed = hashlib.sha256(email.encode('utf-8')).hexdigest()
+# Send hashed in CAPI payload under user_data.em
+```
 
 ---
 
@@ -820,8 +1018,10 @@ Always respond in this format:
 - [ ] **Cookie Banner**: Implement calls to `grantMetaConsent()` / `revokeMetaConsent()`
 - [ ] **GDPR (EU)**: Ensure consent obtained before any data transmission
 - [ ] **CCPA (CA)**: Enable LDU if you have California users
+- [ ] **Lead Email Hashing**: Confirm Lead events include SHA-256 hashed email (`em`) for Advanced Matching
+- [ ] **CAPI Hash Consistency**: If using server-side, ensure the same normalized email produces the same SHA-256 hash in both browser and CAPI
 - [ ] **CAPI Deduplication**: If using server-side, confirm `eventID` matches browser payload
-- [ ] **Testing**: Verify events fire only after consent in EU
+- [ ] **Testing**: Verify events fire only after consent in EU; check Meta Pixel Helper shows hashed `em`
 
 ### Updated Code:
 
@@ -840,6 +1040,10 @@ Always respond in this format:
 - **NEVER** send Pixel data to US without consent in EU (unless using Standard mode with explicit user acknowledgment)
 - **ALWAYS** warn users about Schrems II data transfer risks when Standard mode selected
 - **ALWAYS** advise on `eventID` deduplication if CAPI is mentioned
+- **ALWAYS** include SHA-256 hashed email (`em`) in `Lead` events when an email input is present in the form
+- **ALWAYS** normalize email (trim + lowercase) before hashing to ensure CAPI/browser hash consistency
+- **NEVER** attach `Lead` to a button that merely opens a popup/modal/hidden form (e.g. `setShowForm`, modal toggle) — always find and attach to the real form submission inside
+- **ALWAYS** prefer `<form onSubmit>` or `<button type="submit">` over generic text-matching buttons for Lead tracking
 
 ---
 
@@ -898,3 +1102,4 @@ Skill response:
 - **v1.0.0**: Basic pixel injection (PageView, Lead)
 - **v2.0.0**: Added GDPR/ePrivacy/CCPA compliance, Consent Mode, Limited Data Use, unified control layer for GA4/Clarity/Meta
 - **v2.1.0**: Fixed Advanced Consent `init` timing, added React/Next.js components, separated LDU from mode selection, added cookie clearing on revoke, added CAPI Event Deduplication guide
+- **v2.2.0**: Added Advanced Matching with client-side SHA-256 email hashing for Lead events, updated Lead tracking examples to include hashed `em` parameter, added CAPI hash consistency rules, improved Lead trigger detection to distinguish real form submissions from popup/modal openers
