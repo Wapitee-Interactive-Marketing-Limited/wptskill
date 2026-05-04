@@ -7,7 +7,15 @@
 
 ## 安装 Skill
 
-### macOS
+### 新方法：使用 skills.sh（推荐）
+
+```bash
+npx skills add Wapitee-Interactive-Marketing-Limited/wptskill
+```
+
+### 旧方法：手动克隆并执行安装脚本
+
+#### macOS
 
 ```bash
 # 克隆仓库到本地 Claude skills 目录
@@ -17,7 +25,7 @@ git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git 
 cd ~/.claude/skills/wapitee && ./setup
 ```
 
-### Windows
+#### Windows
 
 ```powershell
 # 克隆仓库到本地 Claude skills 目录
