@@ -6,6 +6,21 @@ Complete guide to User ID implementation, user properties, and cross-device trac
 
 User ID enables cross-device tracking for authenticated users. User properties allow tracking custom user attributes across all events. Together, they provide a unified view of user behaviour across devices and sessions.
 
+## Important: `user_id` vs `user_data`
+
+These are **entirely different** concepts. Do not confuse them.
+
+| | `user_id` | `user_data` |
+|---|---|---|
+| **Purpose** | Internal CRM identifier for cross-device tracking | Hashed customer details for ad matching |
+| **Contains PII?** | No (must NOT contain PII) | Yes (must be SHA-256 hashed) |
+| **Example** | `Shopify_Customer_98723` | `sha256_email_address: "a8af83..."` |
+| **Used for** | Stitching sessions across devices | Matching conversions to Google accounts |
+| **See also** | This document | [User-Provided Data](user-provided-data.md) |
+
+- Use `user_id` for authenticated user tracking (this document)
+- Use `user_data` for Enhanced Conversions and Google Ads matching ([User-Provided Data guide](user-provided-data.md))
+
 ## User ID Implementation
 
 ### What is User ID

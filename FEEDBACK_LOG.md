@@ -27,6 +27,41 @@
 
 <!-- 新记录写在这下面 -->
 
+## 2026-05-16: GA4 skill 缺失 User-Provided Data / Enhanced Conversions 指南
+
+- **关联 Skill**: `google-analytics`
+- **问题描述**:
+  1. GA4 skill 的 14 个参考文档中完全没有提到 `user_data` 对象，只讲了 `user_id`（CRM 内部 ID）。用户容易混淆这两个概念。
+  2. 没有覆盖 Google Enhanced Conversions 的实现：缺少 `sha256_email_address`、`sha256_phone_number` 等字段说明。
+  3. 没有提到哈希前的标准化流程，尤其是 Gmail/Googlemail 的特殊规则（去掉 `@` 前的点号）。
+  4. 没有说明 Google Ads Enhanced Conversions 的配置和验证方法。
+- **触发场景**: 用户需要在 GA4 中传递哈希后的用户邮箱以实现 Enhanced Conversions，但 skill 中没有相关指南。
+- **影响范围**: 所有使用 GA4 skill 且需要 Google Ads 转化增强的项目
+- **修复方案**:
+  1. 新建 `references/user-provided-data.md`，完整覆盖 `user_data` vs `user_id` 概念澄清、`user_data` 对象结构、预哈希/自动哈希模式、SHA-256 规范化流程（含 Gmail 去点规则）、Enhanced Conversions 配置、各框架实现示例、隐私合规、Google vs Meta 哈希对比表。
+  2. 更新 `SKILL.md` 决策树，新增 `user-provided-data.md` 入口和 Enhanced Conversions 工作流。
+  3. 更新 `references/user-tracking.md`，在开头添加概念澄清表格区分 `user_id` 和 `user_data`。
+  4. 更新 `references/gtag.md`，在 `gtag('set')` 章节添加 `user_data` 示例。
+  5. 更新 `references/privacy.md`，添加 PII 哈希最佳实践和邮箱规范化代码。
+  6. 更新 `references/measurement-protocol.md`，添加 server-side `user_data` 传递示例。
+- **状态**: `已修复`
+- **记录人**: Jacob
+
+## 2026-05-16: Meta Pixel skill 邮箱规范化不够完善
+
+- **关联 Skill**: `meta-pixel-tracking`
+- **问题描述**:
+  1. Meta Pixel skill 的邮箱哈希只做了 `trim().toLowerCase()`，缺少对 `mailto:` 前缀和 `+` 别名（如 `user+tag@example.com`）的处理。
+  2. 如果浏览器端和 CAPI 服务器端的规范化不一致，会导致哈希不匹配，降低 Event Match Quality (EMQ)。
+- **触发场景**: 用户邮箱包含 `+` 别名（常见于 Gmail 用户用 `+` 做标签分类），或从某些系统获取的邮箱带有 `mailto:` 前缀。
+- **影响范围**: 所有使用 meta-pixel-tracking skill 的落地页项目
+- **修复方案**:
+  1. 新增 `normalizeEmail()` 函数，在原有 trim + lowercase 基础上增加：去除 `mailto:` 前缀、去除 `+` 别名（`user+tag@example.com` → `user@example.com`）。
+  2. 更新 skill 中的 Plain HTML 和 React/Next.js 代码示例，使用新的 `normalizeEmail()` 函数。
+  3. 更新数据规范化规则表格、Hard Rules、Post-Deployment Checklist，明确规范化步骤。
+- **状态**: `已修复`
+- **记录人**: Jacob
+
 ## 2026-04-16: Meta Pixel skill 误判 Subscribe 按钮为 Lead 触发点，且缺少邮箱哈希
 
 - **关联 Skill**: `meta-pixel-tracking`

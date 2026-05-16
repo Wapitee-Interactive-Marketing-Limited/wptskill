@@ -404,6 +404,61 @@ dataLayer.filter(item => item[0] === 'consent')
 - Include in all Measurement Protocol requests
 - Store user preferences in database
 
+## PII Hashing Best Practices
+
+When sending customer data to GA4 via `user_data`, you **must** hash all PII with SHA-256. Google strictly prohibits sending raw, unhashed personal data.
+
+### Required Hashing
+
+| Field | Pre-Hashed Key | Normalization Before Hash |
+|-------|---------------|---------------------------|
+| Email | `sha256_email_address` | Trim, lowercase, remove Gmail dots |
+| Phone | `sha256_phone_number` | Digits only, include country code |
+| First Name | `sha256_first_name` | Trim, lowercase |
+| Last Name | `sha256_last_name` | Trim, lowercase |
+
+### Email Normalization (Critical)
+
+Google's matching depends on exact normalization. Follow these rules:
+
+1. **Trim whitespace** — Remove leading/trailing spaces
+2. **Lowercase** — Entire email to lowercase
+3. **Gmail rule** — For `@gmail.com` and `@googlemail.com`, remove all periods before `@`
+
+```javascript
+function normalizeEmail(email) {
+  if (!email) return '';
+  let normalized = email.trim().toLowerCase();
+  const [localPart, domain] = normalized.split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    normalized = localPart.replace(/\./g, '') + '@' + domain;
+  }
+  return normalized;
+}
+
+// "  John.Doe@Gmail.com  " → "johndoe@gmail.com"
+```
+
+### Consent for user_data
+
+Only send `user_data` when user has granted consent:
+
+```javascript
+// Check consent before setting user_data
+if (localStorage.getItem('ga_consent') === 'granted') {
+  gtag('set', 'user_data', {
+    sha256_email_address: hashedEmail
+  });
+}
+
+// Clear on consent revocation or logout
+function clearUserData() {
+  gtag('set', 'user_data', null);
+}
+```
+
+See [User-Provided Data](user-provided-data.md) for complete implementation guide.
+
 ## Quick Reference
 
 ### Consent Parameters (v2)

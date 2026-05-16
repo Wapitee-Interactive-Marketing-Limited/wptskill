@@ -446,6 +446,54 @@ payload = {
 }
 ```
 
+### 8. Send User Data (Enhanced Conversions)
+
+Pass hashed customer data for improved matching:
+
+```python
+import hashlib
+
+def normalize_email(email):
+    if not email:
+        return ''
+    normalized = email.strip().lower()
+    local_part, domain = normalized.split('@')
+    if domain in ('gmail.com', 'googlemail.com'):
+        normalized = local_part.replace('.', '') + '@' + domain
+    return normalized
+
+def sha256_hash(input_str):
+    if not input_str:
+        return ''
+    return hashlib.sha256(input_str.encode('utf-8')).hexdigest()
+
+# Build payload with user_data
+email = "John.Doe@Gmail.com"
+phone = "+1 (415) 555-1234"
+
+payload = {
+    "client_id": "client_123",
+    "user_data": {
+        "sha256_email_address": sha256_hash(normalize_email(email)),
+        "sha256_phone_number": sha256_hash(phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', ''))
+    },
+    "events": [{
+        "name": "purchase",
+        "params": {
+            "transaction_id": "T_12345",
+            "value": 99.99,
+            "currency": "USD"
+        }
+    }]
+}
+```
+
+**Key rules:**
+- Always hash PII with SHA-256 before sending
+- Normalize email: trim, lowercase, remove Gmail dots
+- Normalize phone: digits only, include country code
+- See [User-Provided Data](user-provided-data.md) for complete guide
+
 ## Limits
 
 | Limit | Value |

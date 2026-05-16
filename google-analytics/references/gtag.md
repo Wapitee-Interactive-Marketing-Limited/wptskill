@@ -109,7 +109,7 @@ gtag('event', 'purchase', {
 
 ### gtag('set', {properties})
 
-Sets user properties and User ID.
+Sets user properties, User ID, and user_data.
 
 **User ID:**
 ```javascript
@@ -128,6 +128,26 @@ gtag('set', 'user_properties', {
   'account_age_days': 365
 });
 ```
+
+**User Data (Enhanced Conversions):**
+```javascript
+// Pre-hashed mode (recommended)
+gtag('set', 'user_data', {
+  'sha256_email_address': 'a8af8341993604f29cd4e0e5a5a4b5d48c575436c38b28abbfd7d481f345d5db',
+  'sha256_phone_number': 'e9d3eef677f9a3b19820f92696be53d646ac4cea500e5f8fd08b00bc6ac773b1'
+});
+
+// Auto-hash mode (Google hashes for you)
+gtag('set', 'user_data', {
+  'email': 'john.doe@gmail.com',
+  'phone_number': '+14155551234'
+});
+
+// Clear user_data on logout
+gtag('set', 'user_data', null);
+```
+
+See [User-Provided Data](user-provided-data.md) for complete hashing and normalization rules.
 
 ### gtag('consent', 'default/update', {})
 

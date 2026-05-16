@@ -539,9 +539,17 @@ Search for the lead trigger in this priority order:
 </div>
 
 <script>
+function normalizeEmail(email) {
+  if (!email) return '';
+  let normalized = email.trim().toLowerCase();
+  normalized = normalized.replace(/^mailto:/, '');
+  normalized = normalized.replace(/\+[^@]+/, '');
+  return normalized;
+}
+
 async function hashEmail(email) {
   if (!email) return '';
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   const encoder = new TextEncoder();
   const data = encoder.encode(normalized);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -576,7 +584,7 @@ document.getElementById('leadForm').addEventListener('submit', async function(e)
 
 ```tsx
 import { useState } from 'react';
-import { hashEmail } from '@/utils/hashEmail';
+import { hashEmail, normalizeEmail } from '@/utils/hashEmail';
 
 export default function SubscribeSection() {
   const [showForm, setShowForm] = useState(false);
@@ -686,18 +694,30 @@ For **Lead** events, Meta uses **Advanced Matching** to match website visitors t
 
 | Field | Normalization |
 |-------|---------------|
-| `em` (email) | Trim whitespace, convert to **lowercase**, remove `mailto:` |
+| `em` (email) | Trim whitespace, convert to **lowercase**, remove `mailto:`, remove `+` aliases (e.g. `user+tag@example.com` → `user@example.com`) |
 | `ph` (phone) | Strip all non-numeric characters, prepend **country code** (e.g. `+86`) |
 | `fn` / `ln` | Trim, convert to **lowercase**, remove accents if possible |
+
+**Why normalization matters**: If browser-side and server-side CAPI use different normalization, Meta cannot match the hashes — leading to lower Event Match Quality (EMQ) and wasted ad spend. Always apply the same normalization in both places.
 
 ### Client-Side SHA-256 Hash Helper
 
 #### Plain JavaScript
 
 ```javascript
+function normalizeEmail(email) {
+  if (!email) return '';
+  let normalized = email.trim().toLowerCase();
+  // Remove mailto: prefix if present
+  normalized = normalized.replace(/^mailto:/, '');
+  // Remove + aliases (e.g. user+tag@example.com → user@example.com)
+  normalized = normalized.replace(/\+[^@]+/, '');
+  return normalized;
+}
+
 async function hashEmail(email) {
   if (!email) return '';
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   const encoder = new TextEncoder();
   const data = encoder.encode(normalized);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -710,9 +730,19 @@ async function hashEmail(email) {
 
 ```tsx
 // utils/hashEmail.ts
+export function normalizeEmail(email: string): string {
+  if (!email) return '';
+  let normalized = email.trim().toLowerCase();
+  // Remove mailto: prefix if present
+  normalized = normalized.replace(/^mailto:/, '');
+  // Remove + aliases (e.g. user+tag@example.com → user@example.com)
+  normalized = normalized.replace(/\+[^@]+/, '');
+  return normalized;
+}
+
 export async function hashEmail(email: string): Promise<string> {
   if (!email) return '';
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   const encoder = new TextEncoder();
   const data = encoder.encode(normalized);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -1019,6 +1049,7 @@ Always respond in this format:
 - [ ] **GDPR (EU)**: Ensure consent obtained before any data transmission
 - [ ] **CCPA (CA)**: Enable LDU if you have California users
 - [ ] **Lead Email Hashing**: Confirm Lead events include SHA-256 hashed email (`em`) for Advanced Matching
+- [ ] **Email Normalization**: Verify emails are trimmed, lowercased, `mailto:` removed, and `+` aliases stripped before hashing
 - [ ] **CAPI Hash Consistency**: If using server-side, ensure the same normalized email produces the same SHA-256 hash in both browser and CAPI
 - [ ] **CAPI Deduplication**: If using server-side, confirm `eventID` matches browser payload
 - [ ] **Testing**: Verify events fire only after consent in EU; check Meta Pixel Helper shows hashed `em`
@@ -1041,7 +1072,7 @@ Always respond in this format:
 - **ALWAYS** warn users about Schrems II data transfer risks when Standard mode selected
 - **ALWAYS** advise on `eventID` deduplication if CAPI is mentioned
 - **ALWAYS** include SHA-256 hashed email (`em`) in `Lead` events when an email input is present in the form
-- **ALWAYS** normalize email (trim + lowercase) before hashing to ensure CAPI/browser hash consistency
+- **ALWAYS** normalize email (trim + lowercase + remove `mailto:` + remove `+` aliases) before hashing to ensure CAPI/browser hash consistency
 - **NEVER** attach `Lead` to a button that merely opens a popup/modal/hidden form (e.g. `setShowForm`, modal toggle) — always find and attach to the real form submission inside
 - **ALWAYS** prefer `<form onSubmit>` or `<button type="submit">` over generic text-matching buttons for Lead tracking
 

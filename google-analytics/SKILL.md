@@ -56,6 +56,7 @@ Implementing standard tracking events?      -> references/recommended-events.md
 Creating business-specific custom events?   -> references/custom-events.md
 Making parameters appear in reports?        -> references/custom-dimensions.md
 Implementing User ID / cross-device?        -> references/user-tracking.md
+Sending hashed customer data for matching?  -> references/user-provided-data.md
 Building audiences for remarketing?         -> references/audiences.md
 Analysing data in GA4 reports?              -> references/reporting.md
 Exporting to BigQuery for SQL analysis?     -> references/bigquery.md
@@ -109,6 +110,13 @@ GA4 tracks everything as events in four categories:
 
 1. Implement [User ID](references/user-tracking.md) and configure Reporting Identity (Admin -> Data Settings)
 2. Set [user properties](references/custom-dimensions.md) and build [cross-device audiences](references/audiences.md)
+
+### Enhanced Conversions
+
+1. Collect customer email/phone at conversion points (checkout, form submit, login)
+2. Normalize and SHA-256 hash following [User-Provided Data](references/user-provided-data.md) rules
+3. Send via `gtag('set', 'user_data', ...)` before conversion events
+4. Enable Enhanced Conversions in linked Google Ads account
 
 ### GDPR Compliance
 
