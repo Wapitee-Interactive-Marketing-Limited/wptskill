@@ -11,7 +11,7 @@ triggers:
   - "网站热力图"
   - "自定义事件"
   - "追踪用户行为"
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Microsoft Clarity 完整集成助手
@@ -22,6 +22,23 @@ version: 1.0.0
 - "microsoft clarity", "clarity 埋点", "clarity 代码", "网站热力图"
 - "自定义事件", "追踪用户行为", "埋点事件", "event tracking"
 - "用户点击", "鼠标悬停", "滚动追踪", "表单提交"
+
+## Skill 场景识别指南
+
+当用户请求 Clarity 集成时，AI 应根据页面特征自动判断场景：
+
+| 场景 | 页面特征 | 推荐功能 | 典型标签 |
+|------|---------|---------|----------|
+| **前测项目** | 只有订阅表单、newsletter、无价格元素 | `identify` + Custom Tags | `customer_type: subscriber` |
+| **电商项目** | 有价格、购物车、Add to Cart、结账 | `identify` + Custom Tags + 事件追踪 | `cart_value: over_100`, `funnel_stage: added_to_cart` |
+| **混合场景** | 既有订阅又有购买 | `identify` + Custom Tags + 用户意图标签 | `user_intent: subscriber/buyer` |
+
+**判断逻辑**：
+1. 检查页面是否有价格显示、购物车图标、Add to Cart 按钮 → 电商场景
+2. 检查是否有订阅表单、email input、无价格元素 → 前测场景
+3. 两者都有 → 混合场景，使用 `user_intent` 标签区分
+
+---
 
 ## 功能模块一：基础埋点（单次提问模式）
 
@@ -83,7 +100,222 @@ export function useMicrosoftClarity() {
 }
 ```
 
-## 功能模块二：智能自定义事件生成器（核心功能）
+## 功能模块二：用户识别与 Custom Tags（分组标签）
+
+### 2A: 用户识别 — `clarity("identify")`
+
+Clarity 的 `identify` 方法允许你将用户与一个自定义 ID 关联，便于在录屏中搜索特定用户、追踪跨设备旅程。
+
+**关键特性：自动哈希**
+
+与 Google/Meta 不同，**Clarity 在浏览器端自动哈希 PII**。你可以直接传入原始 email，Clarity 的 JavaScript 会在传输前自动加密。Microsoft 永远不会看到原始 PII。
+
+| 平台 | 哈希责任方 | 说明 |
+|------|-----------|------|
+| **Clarity** | Clarity SDK（自动） | 直接传 raw email，SDK 自动 SHA-256 |
+| Google (GA4) | 开发者（手动） | 必须自己哈希 `sha256_email_address` |
+| Meta (Pixel) | 混合 | `fbevents.js` 自动哈希，但 CAPI 需手动哈希 |
+
+**基本用法：**
+
+```javascript
+// 用户登录后、提交表单后、购买后触发
+window.clarity("identify", "alex@gmail.com");
+
+// 或用内部用户 ID（Shopify Customer ID）
+window.clarity("identify", "shopify_customer_98723");
+```
+
+**何时触发：**
+
+| 场景 | 触发时机 | 推荐 ID |
+|------|---------|---------|
+| 用户登录 | 登录成功后 | 内部用户 ID 或 email |
+| 提交订阅表单 | 表单提交成功后 | email |
+| 完成购买 | 订单确认页 | Shopify Customer ID 或 email |
+| 注册用户 | 注册成功后 | 用户 ID |
+
+**各框架实现：**
+
+**React / Next.js：**
+```tsx
+// hooks/useClarityIdentify.ts
+export function useClarityIdentify(userId: string | undefined) {
+  useEffect(() => {
+    if (userId && typeof window !== 'undefined' && window.clarity) {
+      window.clarity("identify", userId);
+    }
+  }, [userId]);
+}
+
+// 在登录/用户状态组件中使用
+function UserProfile({ user }) {
+  useClarityIdentify(user?.email); // Clarity 自动哈希
+  return <div>...</div>;
+}
+```
+
+**原生 JavaScript：**
+```javascript
+// 在表单提交成功后调用
+document.getElementById('subscribe-form').addEventListener('submit', function(e) {
+  const email = document.getElementById('email').value;
+  if (window.clarity && email) {
+    window.clarity("identify", email); // 自动哈希，无需处理
+  }
+});
+```
+
+---
+
+### 2B: Custom Tags — 用户分组与行为标记
+
+Custom Tags 允许你为会话打上业务标签，随后在 Clarity Dashboard 中按标签筛选热力图和录屏。
+
+**核心 API：**
+
+```javascript
+window.clarity("set", "tag_name", "tag_value");
+```
+
+**AI 场景自动识别：**
+
+Skill 应根据页面特征自动判断场景，推荐对应的标签策略：
+
+#### 场景 A：前测项目（Pre-Test / Lead Generation）
+
+**页面特征**：只有订阅表单、 newsletter signup、无价格/购物车元素
+
+**推荐标签：**
+
+```javascript
+// 用户提交订阅表单后
+window.clarity("set", "customer_type", "subscriber");
+
+// 如果用户来自特定广告渠道
+window.clarity("set", "traffic_source", "facebook_ad");
+
+// 用户完成问卷
+window.clarity("set", "engagement_level", "form_completed");
+```
+
+**Dashboard 筛选用途：**
+- 只看 "subscriber" 用户的热力图 → 优化订阅转化
+- 对比 "form_completed" vs "bounced" 的行为差异
+
+#### 场景 B：电商项目（Ecommerce）
+
+**页面特征**：有价格显示、Add to Cart 按钮、购物车、结账流程
+
+**推荐标签：**
+
+```javascript
+// 根据购物车金额分组
+window.clarity("set", "cart_value", "over_100");   // 或 "under_100", "empty"
+
+// 用户类型
+window.clarity("set", "customer_type", "new_visitor");  // 或 "returning", "purchaser"
+
+// 购买阶段
+window.clarity("set", "funnel_stage", "added_to_cart"); // 或 "checkout_started", "purchased"
+```
+
+**Dashboard 筛选用途：**
+- 对比 "cart_value: over_100" vs "cart_value: empty" 的热力图差异
+- 看 "funnel_stage: purchased" 用户的完整录屏，找出转化路径
+
+#### 场景 C：混合场景（落地页 + 电商）
+
+**页面特征**：既有订阅入口，又有产品购买
+
+**推荐标签：**
+
+```javascript
+// 先标记用户主要意图
+window.clarity("set", "user_intent", "subscriber");  // 或 "buyer", "browser"
+
+// 再标记价值层级
+window.clarity("set", "value_tier", "high_value");   // 基于行为或金额判断
+```
+
+---
+
+### 2C: 完整集成示例（前测项目）
+
+**场景**：用户填写 newsletter 订阅表单，需要标记为 subscriber 并识别用户
+
+```tsx
+// components/SubscribeForm.tsx
+'use client';
+import { useState } from 'react';
+
+export default function SubscribeForm() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 1. 你的表单提交逻辑（API call）
+    // await api.subscribe(email);
+
+    // 2. 标记用户为 subscriber
+    if (typeof window !== 'undefined' && window.clarity) {
+      window.clarity("set", "customer_type", "subscriber");
+      window.clarity("identify", email); // Clarity 自动哈希
+    }
+
+    setSubmitted(true);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        required
+      />
+      <button type="submit">Subscribe</button>
+      {submitted && <p>Thank you for subscribing!</p>}
+    </form>
+  );
+}
+```
+
+---
+
+### 2D: 完整集成示例（电商项目）
+
+**场景**：用户将商品加入购物车，需要根据购物车金额打标签
+
+```tsx
+// components/AddToCartButton.tsx
+'use client';
+
+export default function AddToCartButton({ product, cartTotal }: { product: any; cartTotal: number }) {
+  const handleAddToCart = () => {
+    // 1. 你的加购逻辑
+    // await api.addToCart(product.id);
+
+    // 2. 根据购物车金额打标签
+    if (typeof window !== 'undefined' && window.clarity) {
+      const newTotal = cartTotal + product.price;
+      const valueTier = newTotal > 100 ? 'over_100' : newTotal > 0 ? 'under_100' : 'empty';
+
+      window.clarity("set", "cart_value", valueTier);
+      window.clarity("set", "funnel_stage", "added_to_cart");
+    }
+  };
+
+  return <button onClick={handleAddToCart}>Add to Cart</button>;
+}
+```
+
+---
+
+## 功能模块三：智能自定义事件生成器（核心功能）
 
 当用户说类似以下的话时激活：
 - "当用户 hover 这里时触发..."
@@ -383,6 +615,25 @@ useFormTracking(currentStep);
 - [ ] **事件命名检查**：确认事件名只包含字母、数字、下划线，且大小写拼写正确
 - [ ] **等待时间**：Clarity 数据通常有 30 分钟延迟，不要过早判断未生效
 - [ ] **SPA 路由**：如果是 React/Vue SPA，确认 useEffect/onMounted 中正确重建了事件监听器
+- [ ] **用户识别验证**：提交表单/登录后，在 Clarity Dashboard > Recordings 中搜索用户 ID，确认能定位到该用户的录屏
+- [ ] **Custom Tags 验证**：在 Dashboard > Filters > Custom Tags 中查看标签是否正确显示，确认能按标签筛选录屏和热力图
+- [ ] **场景标签一致性**：确认同一用户会话中的 Custom Tags 没有冲突（例如不会同时标记为 subscriber 和 purchaser）
+
+---
+
+### Frustration Metrics 快速参考
+
+Clarity 内置的 Frustration Filters 帮你快速定位用户体验问题，无需观看随机录屏：
+
+| 指标 | 说明 | 排查场景 |
+|------|------|----------|
+| **Rage Clicks** | 用户短时间内多次点击同一元素 | 按钮无响应、链接失效、加载过慢 |
+| **Dead Clicks** | 用户点击了不可点击的元素 | 设计误导（看起来像按钮的文本/图片） |
+| **JavaScript Errors** | 用户遇到 JS 报错 | 结账流程崩溃、表单验证失败、API 错误 |
+| **Excessive Scrolling** | 用户反复上下滚动 | 找不到内容、页面布局混乱 |
+| **Quick Backs** | 用户快速返回上一页 | 内容不符预期、加载失败 |
+
+**使用方式**：Dashboard > Recordings > Filters > Frustration > 勾选对应指标
 
 ---
 
