@@ -1,19 +1,6 @@
 ---
 name: wapitee-survey-webhook-setup
-description: >
-  Wapitee Survey Webhook 推送配置助手。帮助开发/运营将网站/落地页上的
-  邮箱收集表单通过 Webhook POST 推送到 Wapitee Survey 系统。
-  具备中断式提问能力：引导用户从 wapitee.io/admin 获取 Webhook URL 和 Secret，
-  然后生成对应技术栈（Next.js / React / Vue / HTML / Node.js）的推送代码。
-  严格规范 answers 字段格式为 q_1 / q_2 / q_3，支持成功/失败回调入口。
-triggers:
-  - "wapitee survey webhook"
-  - "survey 推送"
-  - "webhook 接收"
-  - "留邮箱推送"
-  - "wapitee survey"
-  - "survey webhook"
-version: 1.0.0
+description: "Wapitee Survey Webhook 推送配置助手。帮助开发/运营将网站/落地页上的邮箱收集表单通过 Webhook POST 推送到 Wapitee Survey 系统。具备中断式提问能力：引导用户从 wapitee.io/admin 获取 Webhook URL 和 Secret，然后生成对应技术栈（Next.js / React / Vue / HTML / Node.js）的推送代码。严格规范 answers 字段格式为 q_1 / q_2 / q_3，支持成功/失败回调入口。
 ---
 
 # Wapitee Survey Webhook 推送配置助手
