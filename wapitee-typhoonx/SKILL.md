@@ -1,16 +1,6 @@
 ---
 name: wapitee-typhoonx-setup
-description: >
-  Wapitee 内部数据追踪功能 TyphoonX 的埋点配置助手。
-  事件名称与参数采用与 Google Analytics 4 完全一致的标准规范（snake_case），
-  支持多技术栈代码生成。
-triggers:
-  - "typhoonx"
-  - "wapitee typhoonx"
-  - "typhoonx 埋点"
-  - "typhoonx 对接"
-  - "typhoonx 追踪"
-version: 1.0.0
+description: Wapitee 内部数据追踪功能 TyphoonX 的埋点配置助手。事件名称与参数采用与 Google Analytics 4 完全一致的标准规范（snake_case），支持多技术栈代码生成。
 ---
 
 # Wapitee TyphoonX 埋点配置助手
