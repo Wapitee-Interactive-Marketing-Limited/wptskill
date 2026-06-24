@@ -1,4 +1,3 @@
-<!-- ai-directive: skill-registry -->
 # Wapitee Skill Registry
 
 本项目是 Wapitee 团队内部使用的 Claude Code Skill 仓库，用于集中存储和维护与业务相关的 AI 技能文件。
@@ -7,76 +6,24 @@
 
 ## 安装 Skill
 
-### 新方法：使用 skills.sh（推荐）
-
 ```bash
 npx skills add Wapitee-Interactive-Marketing-Limited/wptskill
 ```
 
-### 旧方法：手动克隆并执行安装脚本
-
-#### macOS
-
-```bash
-# 克隆仓库到本地 Claude skills 目录
-git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git ~/.claude/skills/wapitee
-
-# 执行安装脚本
-cd ~/.claude/skills/wapitee && ./setup
-```
-
-#### Windows
-
-```powershell
-# 克隆仓库到本地 Claude skills 目录
-git clone https://github.com/Wapitee-Interactive-Marketing-Limited/wptskill.git "$env:LOCALAPPDATA\Claude\skills\wapitee"
-
-# 执行安装脚本
-cd "$env:LOCALAPPDATA\Claude\skills\wapitee"
-.\setup.ps1
-```
-
-## 更新 Skill
-
-### macOS
-
-```bash
-# 仅更新 Skill
-cd ~/.claude/skills/wapitee && git pull
-
-# 更新 Skill 和安装脚本
-cd ~/.claude/skills/wapitee && git pull && ./setup
-```
-
-### Windows
-
-```powershell
-# 仅更新 Skill
-cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull
-
-# 更新 Skill 和安装脚本
-cd "$env:LOCALAPPDATA\Claude\skills\wapitee"; git pull; .\setup.ps1
-```
-
----
-
 > **AI 读取规则**：当用户发起任何请求时，**优先读取本文件**，根据用户意图匹配下方技能列表，然后再读取对应的具体 skill 文件。不要直接猜测该用哪个 skill。
-
----
 
 ## Skill 速查表
 
-| 匹配优先级 | 触发场景（关键词/意图） | Skill 文件名 | Skill 名称 |
+| 匹配优先级 | 触发场景（关键词/意图） | Skill 文件路径 | Skill 名称 |
 |:---|:---|:---|:---|
-| **P0** | 用户提到 Meta Pixel / Facebook Pixel / `fbq` / Lead 追踪 / Pixel ID | `meta-pixel-tracking-with-privacy-v2.md` | `meta-pixel-tracking` |
-| **P0** | 用户提到 Google Analytics 4 / `ga4` / `gtag` / GA4 埋点 / 需要 Meta-GA4 事件对照 | `google-analytics-4-setup.md` | `google-analytics-4-setup` |
-| **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `microsoft-clarity-gdpr-control.md` | `microsoft-clarity-gdpr-control` |
-| **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `microsoft-clarity-setup.md` | `microsoft-clarity-setup` |
-| **P1** | 用户提到 `wapitee survey webhook`、`survey 推送`、`webhook 接收`、`留邮箱推送` | `wapitee-survey-webhook-setup.md` | `wapitee-survey-webhook-setup` |
-| **P1** | 用户提到 `TyphoonX`、`Landing Page` 埋点、`page_view`、`engaged_view`、`generate_lead`、轻量级分析追踪 | `landingpage_typhoonx_installation.md` | `landingpage-typhoonx-installation` |
-| **P1** | 用户提到 `Wapitee 水印`、`watermark`、`console logo`、`console 水印` | `wapitee-watermark.md` | `wapitee-watermark` |
-
----
+| **P0** | 用户提到 Meta Pixel / Facebook Pixel / `fbq` / Lead 追踪 / Pixel ID | `wapitee/meta-pixel-tracking-with-privacy-v2/SKILL.md` | `meta-pixel-tracking` |
+| **P0** | 用户提到 Google Analytics 4 / `ga4` / `gtag` / GA4 埋点 / 需要 Meta-GA4 事件对照 | `wapitee/google-analytics-4-setup/SKILL.md` | `google-analytics-4-setup` |
+| **P0** | 用户提到 `TyphoonX`、`Wapitee TyphoonX`、`TyphoonX 埋点`、`TyphoonX 对接`、`sendBeacon`、`client_id`、电商 / SaaS / 内容站 / 线索收集事件追踪 | `wapitee/typhoonx-integration/SKILL.md` | `typhoonx-integration` |
+| **P1** | 用户提到 `clarity` + `gdpr`、`隐私`、`cookie banner`、`consent mode`、`同意管理` | `wapitee/microsoft-clarity-gdpr-control/SKILL.md` | `microsoft-clarity-gdpr-control` |
+| **P1** | 用户提到 `clarity 埋点`、`自定义事件`、`热力图`、`追踪用户行为`、`event tracking`（不含隐私/Consent 关键词） | `wapitee/microsoft-clarity-setup/SKILL.md` | `microsoft-clarity-setup` |
+| **P1** | 用户提到 `wapitee survey webhook`、`survey 推送`、`webhook 接收`、`留邮箱推送` | `wapitee/wapitee-survey-webhook/SKILL.md` | `wapitee-survey-webhook-setup` |
+| **P1** | 用户同时提到 `TyphoonX` 与 `Landing Page` / 独立落地页 / `page_view` / `engaged_view` / `generate_lead` / 轻量级分析追踪 | `wapitee/landingpage_typhoonx_installation/SKILL.md` | `landingpage-typhoonx-installation` |
+| **P1** | 用户提到 `Wapitee 水印`、`watermark`、`console logo`、`console 水印` | `wapitee/wapitee-watermark/SKILL.md` | `wapitee-watermark` |
 
 ## 冲突解决规则
 
@@ -102,12 +49,10 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
     → 为同一业务场景生成两套正确命名的事件代码
 ```
 
----
-
 ## Skill 清单（详细版）
 
 ### `meta-pixel-tracking`
-- **文件**：`meta-pixel-tracking-with-privacy-v2.md`
+- **文件**：`wapitee/meta-pixel-tracking-with-privacy-v2/SKILL.md`
 - **作用**：Meta (Facebook) Pixel 的隐私合规安装与事件追踪
 - **核心能力**：
   - 注入 Pixel base code、PageView、Lead 转化
@@ -115,16 +60,8 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 支持 Standard / Basic Consent / Advanced Consent 三种模式
 - **必备信息**：Pixel ID（如缺失会中断并询问）
 
-### `microsoft-clarity-gdpr-control`
-- **文件**：`microsoft-clarity-gdpr-control.md`
-- **作用**：Microsoft Clarity 的隐私合规与 Cookie Banner 集成
-- **核心能力**：
-  - Consent Mode V2 控制代码（延迟加载、同意级别切换、无 Cookie 模式）
-  - 与 Cookiebot、OneTrust、Osano 或自建 Banner 集成
-- **必备信息**：用户选择的同意级别（拒绝 / 仅分析 / 全部同意）
-
 ### `google-analytics-4-setup`
-- **文件**：`google-analytics-4-setup.md`
+- **文件**：`wapitee/google-analytics-4-setup/SKILL.md`
 - **作用**：Google Analytics 4 基础埋点、标准事件生成、以及 Meta-GA4 事件命名对照
 - **核心能力**：
   - 生成 gtag 基础代码与 Consent Mode V2 配置
@@ -132,8 +69,26 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 支持多平台统一 consent 控制层
 - **必备信息**：GA4 Measurement ID（如缺失会中断并询问）
 
+### `typhoonx-integration`
+- **文件**：`wapitee/typhoonx-integration/SKILL.md`
+- **作用**：Wapitee TyphoonX 通用浏览器端事件追踪集成
+- **核心能力**：
+  - 生成 Next.js / React / Vue / Nuxt / HTML 的 TyphoonX 追踪实现
+  - 使用 GA4 风格 `snake_case` 标准事件与电商参数
+  - 通过 `navigator.sendBeacon` 上报 JSON `Blob`
+  - 处理 `__typhoon_client_id` Cookie、基础 payload 字段与事件映射
+- **必备信息**：`TYPHOONX_MERCHANT_ID`、技术栈、站点类型、需要追踪的关键行为
+
+### `microsoft-clarity-gdpr-control`
+- **文件**：`wapitee/microsoft-clarity-gdpr-control/SKILL.md`
+- **作用**：Microsoft Clarity 的隐私合规与 Cookie Banner 集成
+- **核心能力**：
+  - Consent Mode V2 控制代码（延迟加载、同意级别切换、无 Cookie 模式）
+  - 与 Cookiebot、OneTrust、Osano 或自建 Banner 集成
+- **必备信息**：用户选择的同意级别（拒绝 / 仅分析 / 全部同意）
+
 ### `microsoft-clarity-setup`
-- **文件**：`microsoft-clarity-setup.md`
+- **文件**：`wapitee/microsoft-clarity-setup/SKILL.md`
 - **作用**：Microsoft Clarity 基础埋点与智能自定义事件生成
 - **核心能力**：
   - 生成基础追踪代码（HTML / Next.js / React / Vue / Nuxt）
@@ -141,7 +96,7 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
 - **必备信息**：Clarity Project ID（基础埋点模式）
 
 ### `wapitee-survey-webhook-setup`
-- **文件**：`wapitee-survey-webhook-setup.md`
+- **文件**：`wapitee/wapitee-survey-webhook/SKILL.md`
 - **作用**：Wapitee Survey Webhook 推送配置
 - **核心能力**：
   - 引导用户从 wapitee.io/admin 获取 Webhook URL 和 Secret
@@ -150,7 +105,7 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
 - **必备信息**：`WEBHOOK_URL`、`WEBHOOK_SECRET`、`FRAMEWORK`、前端表单字段名
 
 ### `landingpage-typhoonx-installation`
-- **文件**：`landingpage_typhoonx_installation.md`
+- **文件**：`wapitee/landingpage_typhoonx_installation/SKILL.md`
 - **作用**：Landing Page 专用 TyphoonX 轻量级追踪安装
 - **核心能力**：
   - 自动触发 `page_view` 和 `engaged_view`（页面停留 5 秒）
@@ -161,7 +116,7 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
 - **必备信息**：`merchant_id`（如 `TPX-LANDING-001`）
 
 ### `wapitee-watermark`
-- **文件**：`wapitee-watermark.md`
+- **文件**：`wapitee/wapitee-watermark/SKILL.md`
 - **作用**：在网站浏览器控制台中打印 Wapitee ASCII Logo 与品牌信息
 - **核心能力**：
   - 支持 Next.js / React / Vue / Nuxt / Svelte / Astro / 纯 HTML 等框架
@@ -169,8 +124,6 @@ IF 用户输入同时包含 (meta OR facebook OR fbq) AND (ga4 OR google analyti
   - 严格的 Wapitee 品牌规范（ASCII Logo、文案、颜色 `#E42767`）
   - 零副作用：只操作 `console.log`，不修改 DOM、不阻塞渲染
 - **必备信息**：无（自动检测框架并注入）
-
----
 
 ## 给团队的使用方式
 
@@ -222,8 +175,6 @@ Before answering any user request:
 ### 方式 B：Claude Code 项目级配置
 
 如果使用 Claude Code，可以在项目根目录的 `.claude/CLAUDE.md` 或类似配置中引用本注册表。
-
----
 
 ## 新增 Skill 规范
 
